@@ -32,4 +32,4 @@ sources alone? You can also add diagrams, photos of whiteboards or flipcharts
 or even crudly drawing napkin sketches of the core concepts of your software
 when they are readable and helpful for understanding.
 
-# Test Salome
+# Test Salome 2.0 - sind diese nun sichtbar???
