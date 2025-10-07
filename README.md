@@ -1,6 +1,6 @@
 !! Change this document for your own project by removing the placeholder text, adding your own text, adding helpful sections etc. etc. !!
 
-# Data Scraper Project Frontend
+# Hello
 
 In a few sentences describe what your project is trying to solve.
 
@@ -31,5 +31,3 @@ your ideas for creating the whole software? What might not be apparent from the
 sources alone? You can also add diagrams, photos of whiteboards or flipcharts
 or even crudly drawing napkin sketches of the core concepts of your software
 when they are readable and helpful for understanding.
-
-# Test Salome
