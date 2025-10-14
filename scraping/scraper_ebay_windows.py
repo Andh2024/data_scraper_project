@@ -36,7 +36,9 @@ ITEMS_SELECTOR = "li.brwrvr__item-card, li.brwrvr__item-card--list, li.s-item, .
 TITLE_SELECTOR = "h3.s-item__title, .s-item__title, .brwrvr__title, h3"
 PRICE_SELECTOR = "span.s-item__price, .s-item__price, .brwrvr__price, span[aria-label*='Preis'], div.s-item__detail span, bsig__price, span.bsig__price, span.bsig__price--display"
 LINK_SELECTOR = "a.s-item__link, a[href*='/itm/'], a"
-CONDITION_SELECTOR = "basig_listing_Condition, .brwrvr__condition, .s-item__subtitle, .s-item__condition"']"
+CONDITION_SELECTOR = (
+    "basig_listing_Condition, .brwrvr__condition, .s-item__subtitle, .s-item__condition"
+)
 # -------------------------------------------------------
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
