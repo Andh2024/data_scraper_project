@@ -1,19 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
 ebay_reisegitarren_scraper.py
 Vollständiges Scraper-Skript für:
 https://www.ebay.ch/b/Reisegitarren/159948/bn_7204344
-
-Ergebnis: CSV mit Spalten: id, title, price, link
-
-Wesentliche Merkmale:
-- Selenium + webdriver-manager (automatischer Chromedriver)
-- Cookie-Banner-Erkennung und -Schließung
-- Robuste, mehrstufige Selector-Fallbacks
-- Debug-Ausgaben: debug_page.html, debug_first_item.html
-- Extraktion der eBay-Item-ID aus Artikel-URLs
-- Kompatibel mit Python 3.12
 """
 
 import csv
@@ -36,7 +27,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 # -------------------- Konfiguration --------------------
 START_URL = "https://www.ebay.ch/b/Reisegitarren/159948/bn_7204344"
-OUTPUT_CSV = "ebay_reisegitarren.csv"
+OUTPUT_CSV = "scraping_windows.csv"
 HEADLESS = False  # Für Entwicklung: False (sichtbar). Produktion: True
 WAIT_TIMEOUT = 18  # Sekunden für WebDriverWait
 MAX_ITEMS = 500  # Schutzlimit: max. zu speichernde Items
@@ -45,6 +36,7 @@ ITEMS_SELECTOR = "li.brwrvr__item-card, li.brwrvr__item-card--list, li.s-item, .
 TITLE_SELECTOR = "h3.s-item__title, .s-item__title, .brwrvr__title, h3"
 PRICE_SELECTOR = "span.s-item__price, .s-item__price, .brwrvr__price, span[aria-label*='Preis'], div.s-item__detail span, bsig__price, span.bsig__price, span.bsig__price--display"
 LINK_SELECTOR = "a.s-item__link, a[href*='/itm/'], a"
+CONDITION_SELECTOR = "basig_listing_Condition, .brwrvr__condition, .s-item__subtitle, .s-item__condition"']"
 # -------------------------------------------------------
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
