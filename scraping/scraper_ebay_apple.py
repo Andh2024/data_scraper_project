@@ -2,31 +2,16 @@ import time
 import csv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 
 
 def setup_driver():
-    chrome_options = Options()
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--window-size=1200,800")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    # Headless-Modus (ohne Fenster) optional aktivieren:
-    # chrome_options.add_argument("--headless")
-    chrome_options.add_argument(
-        "user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0 Safari/537.36"
-    )
-
-    # Starte ChromeDriver (Pfad sollte durch Homebrew verfügbar sein)
-    service = ChromeService(executable_path="/opt/homebrew/bin/chromedriver")
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+    driver = webdriver.Safari()
+    driver.set_window_size(1200, 800)
     return driver
 
 
 def accept_cookies(driver):
-    """Akzeptiert das Cookie-Banner, falls sichtbar."""
     try:
         time.sleep(2)
         buttons = driver.find_elements(By.TAG_NAME, "button")
@@ -48,57 +33,54 @@ def accept_cookies(driver):
 def scrape_page(driver, url):
     driver.get(url)
     accept_cookies(driver)
-    time.sleep(3)  # Warten, bis Seite geladen ist
-
+    time.sleep(3)
     html = driver.page_source
     soup = BeautifulSoup(html, "html.parser")
-
     items = []
-
-    # Beispielhafte Karte: passe dies ggf. an die Struktur der Seite an
-    cards = soup.select("li.s-item")
-
+    # Hier ggf. den Selektor anpassen, falls dein Ziel nicht in `li.s-item` steckt
+    cards = soup.select(".srp-river-main li.s-item, .srp-river-main li.s-card")
     for card in cards:
-        # imageDescription (meist im alt-Attribut des <img>)
-        img = card.find("img")
-        image_description = img.get("alt", "").strip() if img else ""
-
-        # span class="su-styled-text secondary default"
-        span1 = card.find("span", class_="su-styled-text secondary default")
-        span1_text = span1.get_text(strip=True) if span1 else ""
-
-        # span class="su-styled-text secondary large"
-        span2 = card.find("span", class_="su-styled-text secondary large")
-        span2_text = span2.get_text(strip=True) if span2 else ""
-
-        # Preis – Versuch über bekannte Preisstruktur
-        price_span = card.find("span", class_="s-item__price")
-        price_text = price_span.get_text(strip=True) if price_span else ""
-
-        # span class="su-styled-text italic large"
-        span3 = card.find("span", class_="su-styled-text italic large")
-        span3_text = span3.get_text(strip=True) if span3 else ""
-
+        # Debug-Ausgabe
+        # print("processing card")
+        # **Neues Feld: das, wonach du gefragt hast**
+        span_default_tag = card.select_one(
+            "div.s-card__title span.su-styled-text.primary.default"
+        )
+        span_default_text = (
+            span_default_tag.get_text(strip=True) if span_default_tag else ""
+        )
+        # Beispiel zusätzliche Felder — du musst sie anpassen, je nach Seite
+        # Hier nur als Platzhalter; du musst ggf. die Selektoren überprüfen
+        price_tag = card.select_one("span.s-item__price")
+        price_text = price_tag.get_text(strip=True) if price_tag else ""
+        # Weitere Felder, falls vorhanden
+        # span_secondary_default / span_secondary_large / span_italic_large etc.
+        span_secondary_default = ""  # TODO: richtiger Selektor
+        span_secondary_large = ""  # TODO: richtiger Selektor
+        span_italic_large = ""  # TODO: richtiger Selektor
         items.append(
             {
-                "imageDescription": image_description,
-                "span_secondary_default": span1_text,
-                "span_secondary_large": span2_text,
+                "imageDescription": "",  # optional: z. B. card.select_one("img")["alt"]
+                "span_secondary_default": span_secondary_default,
+                "span_secondary_large": span_secondary_large,
                 "price": price_text,
-                "span_italic_large": span3_text,
+                "span_italic_large": span_italic_large,
+                # dein gewünschtes neues Feld:
+                "span_default": span_default_text,
             }
         )
-
     return items
 
 
 def save_to_csv(items, filename="reisegitarren.csv"):
+    # Beachte: wir müssen hier das neue Feld "span_default" aufnehmen
     fieldnames = [
         "imageDescription",
         "span_secondary_default",
         "span_secondary_large",
         "price",
         "span_italic_large",
+        "span_default",
     ]
     with open(filename, mode="w", newline="", encoding="utf-8") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -110,7 +92,6 @@ def save_to_csv(items, filename="reisegitarren.csv"):
 def main():
     url = "https://www.ebay.ch/sch/159948/i.html?_nkw=gitarre&_from=R40"
     driver = setup_driver()
-
     try:
         print("🔍 Starte Scraping…")
         items = scrape_page(driver, url)
