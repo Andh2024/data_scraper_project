@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-URL-basierte Paginierung für die eBay-Kategorie "Reisegitarren".
-Speichert CSV mit Feldern: id, title, price, condition, link.
-"""
 
 import time
 import csv
@@ -23,25 +19,26 @@ from bs4 import BeautifulSoup
 # ---------------- Konfiguration (anpassen) ----------------
 BASE_URL = "https://www.ebay.ch/b/Reisegitarren/159948/bn_7204344"
 OUTPUT_CSV = "reisegitarren_paginated.csv"
-HEADLESS = False
+HEADLESS = False  # Für Entwicklung: False (sichtbar). Produktion: True
 WAIT_TIMEOUT = 6  # Sekunden: Wartezeit nach driver.get()
-PAGE_PARAM_NAME = "_pgn"  # Parametername in der URL
-MAX_PAGES = 20  # wie viele Seiten maximal abarbeiten
+PAGE_PARAM_NAME = "_pgn"  # Parametername für Seitenzählung in der URL
+MAX_PAGES = 3  # wie viele Seiten maximal abarbeiten
 MAX_ITEMS = 1000  # Sicherheitslimit: max. zu speichernde Items insgesamt
 DELAY_BETWEEN_PAGES = 1.2  # Sekunden Pause zwischen Seiten (politely)
 # Selektoren (können angepasst / verfeinert werden)
 ITEMS_SELECTOR = "li.brwrvr__item-card"
 TITLE_SELECTOR = "h3"
-PRICE_SELECTOR = "span.s-item__price"
+PRICE_SELECTOR = "span.bsig__price--displayprice"
 CONDITION_SELECTOR = "span.bsig__listingCondition"
 LINK_SELECTOR = "a[href*='/itm/']"
 # ---------------------------------------------------------
 
-# Logging
+# Log für Anzeige im Terminal konfigurieren. Logging Level INFO kann angepasst werden mit DEBUG (detaillierter), WARNING oder ERROR (weniger detailliert).
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger("ebay_pager")
 
 
+# Chrome WebDriver initialisieren
 def init_driver(headless: bool = True) -> webdriver.Chrome:
     opts = Options()
     if headless:
@@ -49,7 +46,7 @@ def init_driver(headless: bool = True) -> webdriver.Chrome:
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
     opts.add_argument("--window-size=1920,1200")
-    # optional: user-agent
+    # Generische User-Agent (so kann man sich selber identifizieren)
     opts.add_argument(
         "user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
     )
@@ -58,11 +55,8 @@ def init_driver(headless: bool = True) -> webdriver.Chrome:
     return driver
 
 
+# URL für eine bestimmte Seite bauen (Seitenzählung)
 def build_page_url(base_url: str, page_number: int) -> str:
-    """
-    Baut eine URL mit ?_pgn=<page_number>&rt=nc (falls nicht vorhanden).
-    Erhält vorhandene Query-Parameter (falls vorhanden).
-    """
     parsed = urlparse(base_url)
     qs = parse_qs(parsed.query)
     qs[PAGE_PARAM_NAME] = [str(page_number)]
@@ -74,10 +68,8 @@ def build_page_url(base_url: str, page_number: int) -> str:
     return urlunparse(new_parsed)
 
 
+# Daten scrapen
 def extract_items_from_html(html: str) -> List[Dict[str, str]]:
-    """
-    Parst HTML (BeautifulSoup) und gibt Liste von Dicts mit id,title,price,condition,link.
-    """
     soup = BeautifulSoup(html, "html.parser")
     items = soup.select(ITEMS_SELECTOR)
     results: List[Dict[str, str]] = []
@@ -92,6 +84,7 @@ def extract_items_from_html(html: str) -> List[Dict[str, str]]:
         condition = condition_el.get_text(strip=True) if condition_el else ""
         link = link_el["href"] if link_el and link_el.has_attr("href") else ""
 
+        # Item-ID aus URL extrahieren
         item_id = ""
         if link:
             m = re.search(r"/itm/(?:.*?/)?(\d{6,})", link)
@@ -111,6 +104,7 @@ def extract_items_from_html(html: str) -> List[Dict[str, str]]:
     return results
 
 
+# Daten in csv speichern
 def save_csv(filename: str, rows: List[Dict[str, str]]):
     fieldnames = ["id", "title", "price", "condition", "link"]
     with open(filename, "w", newline="", encoding="utf-8") as f:
@@ -121,9 +115,11 @@ def save_csv(filename: str, rows: List[Dict[str, str]]):
     logger.info("CSV geschrieben: %s (Zeilen: %d)", filename, len(rows))
 
 
+# Hauptfunktion
 def main():
     driver = init_driver(HEADLESS)
     all_results: List[Dict[str, str]] = []
+    # Cookie-Banner schliessen (falls vorhanden)
     try:
         for page in range(1, MAX_PAGES + 1):
             url = build_page_url(BASE_URL, page)
