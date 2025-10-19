@@ -39,6 +39,7 @@ PRICE_SELECTOR = (
 # Standort/Versand: beide benutzen die gleiche Klasse → beide einsammeln und unterscheiden
 ATTR_ROW_TEXTS_SELECTOR = (
     ".s-card__attribute-row .su-styled-text.secondary.italic.large, "
+    ".s-card__attribute-row .su-styled-text.secondary.large, "
     ".s-item__location, "
     ".s-item__itemLocation"
 )
@@ -61,7 +62,7 @@ NEXT_SELECTOR = ".pagination__next, a[rel='next'], a[aria-label='Weiter']"
 # Konfiguration
 # =========================
 START_URL = "https://www.ebay.ch/sch/119544/i.html?_nkw=gitarre&_from=R40&_ipg=240"
-OUT_CSV = "ebay_gitarre_listings.csv"
+OUT_CSV = "ebay_gitarre_listings_apple.csv"
 MAX_PAGES = 10
 
 # Unerwünschte Screenreader-Phrasen im Titel entfernen
@@ -171,12 +172,16 @@ def _clean_title(title: str) -> str:
     return t
 
 
-def _extract_location_and_shipping(card: BeautifulSoup) -> (str, str):
+from typing import Tuple
+
+
+def _extract_location_and_shipping(card: BeautifulSoup) -> Tuple[str, str]:
     """
     Liest alle sekundären Attributtexte (gleiche Klasse) ein und unterscheidet:
     - versand: enthält 'versand' (de) ODER beginnt mit '+' (Preisaufschlag)
     - land:    enthält 'aus ' (de) oder 'from ' (en)
     Gibt (land, versand) zurück.
+    Wenn kein 'aus ...' vorkommt, wird automatisch 'aus Schweiz' gesetzt.
     """
     texts = [
         el.get_text(" ", strip=True)
@@ -201,7 +206,11 @@ def _extract_location_and_shipping(card: BeautifulSoup) -> (str, str):
     if not land and texts:
         candidates = [t for t in texts if "versand" not in t.lower()]
         if candidates:
-            land = candidates[-1]  # meist steht der Standort in der zweiten Zeile
+            land = candidates[-1]
+
+    # 🔧 Neuer Zusatz: wenn kein "aus" im Text steht, Standardwert "aus Schweiz"
+    if not land or "aus" not in land.lower():
+        land = "aus Schweiz"
 
     return land, versand
 
