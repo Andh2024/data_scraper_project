@@ -120,8 +120,12 @@ def home():
     return render_template("index.html", active_page="home")
 
 
+START_URL = None
+
+
 @app.route("/submit", methods=["POST"])
 def submit():
+    global START_URL
     # Form-Felder (Namen müssen zu deinem index.html passen)
     produkt = request.form.get("produkt", "").strip()
     preis = request.form.get("preis", "").strip()
@@ -138,67 +142,68 @@ def submit():
     START_URL = BASE_URL.format(produkt)
 
     print("Die URL ist:" + START_URL)
+    print("Main-Funktion wurde ausgeführt")
     # Formular-Daten auslesen
-    form_data = request.form  # <--- werkzeug.datastructures.ImmutableMultiDict
+    #  form_data = request.form  # <--- werkzeug.datastructures.ImmutableMultiDict
 
     # In ein normales Dictionary umwandeln
-    data_dict = form_data.to_dict()
+    #  data_dict = form_data.to_dict()
 
     # Optional: Werte umwandeln oder prüfen
-    data_dict["preis"] = int(data_dict["preis"]) if "preis" in data_dict else None
+    # data_dict["preis"] = int(data_dict["preis"]) if "preis" in data_dict else None
 
     # Übergabe an scraper.py
     # result = scrape_data(form_data)
 
-    print(data_dict)
+    # print(data_dict)
     # Beispielausgabe: {'produkt': 'Apfel', 'preis': 2, 'region': 'Zürich'}
 
     # return jsonify({"empfangen": data_dict})
 
     # in CSV schreiben
-    append_row(produkt_url=produkt, preis=preis, region=region)
+    # append_row(produkt_url=produkt, preis=preis, region=region)
 
     # neuen Eintrag für einmalige Anzeige zwischenspeichern
-    session["new_row"] = {
-        "produkt": produkt,
-        "preis": preis,
-        "region": region,
-        "link": produkt,
-    }
-    return redirect(url_for("suchresultat_aktuell"))
+    # session["new_row"] = {
+    #    "produkt": produkt,
+    #    "preis": preis,
+    #    "region": region,
+    #    "link": produkt,
+    # }
+    # return redirect(url_for("suchresultat_aktuell"))
 
-
-@app.route("/suchresultat/aktuell")
-def suchresultat_aktuell():
+    #  @app.route("/suchresultat/aktuell")
+    #  def suchresultat_aktuell():
     """Zeigt nur den zuletzt gespeicherten Eintrag + Erfolgsmeldung."""
-    new_row = session.pop("new_row", None)  # nur einmal anzeigen
-    if not new_row:
-        return redirect(url_for("suchresultat_total"))
-    return render_template(
-        "suchresultat_aktuell.html",
-        daten=[new_row],
-        message="1 neuer Eintrag wurde gespeichert.",
-        success=True,
-        active_page="results",
-    )
+    #  new_row = session.pop("new_row", None)  # nur einmal anzeigen
+    # if not new_row:
+    #   return redirect(url_for("suchresultat_total"))
+    # return render_template(
+    #   "suchresultat_aktuell.html",
+    #   daten=[new_row],
+    #   message="1 neuer Eintrag wurde gespeichert.",
+    #   success=True,
+    #   active_page="results",
+    #  )
 
-
-@app.route("/suchresultat")
-def suchresultat_total():
+    # @app.route("/suchresultat")
+    # def suchresultat_total():
     """Alle gespeicherten Einträge anzeigen."""
-    daten = load_rows_for_table()
-    return render_template(
-        "suchresultat_total.html",
-        daten=daten,
-        active_page="results",
-    )
+
+
+#   daten = load_rows_for_table()
+#   return render_template(
+#     "suchresultat_total.html",
+#     daten=daten,
+#     active_page="results",
+#  )
 
 
 # -----------------------------------------------------------------------------
 # Main
 # -----------------------------------------------------------------------------
-if __name__ == "__main__":
-    app.run(debug=True)
+#  if __name__ == "__main__":
+#   app.run(debug=True)
 
 
 #!/usr/bin/env python3
@@ -650,3 +655,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+    app.run(debug=True)
