@@ -1,9 +1,12 @@
 import csv
 import os
 from pathlib import Path
-from typing import List, Dict, Any
+
+# from typing import List, Dict, Any
 
 from flask import Flask, render_template, request, redirect, url_for, session
+
+# from scraper import scrape_data
 
 # -----------------------------------------------------------------------------
 # Flask-App
@@ -107,6 +110,23 @@ def submit():
     produkt = request.form.get("produkt", "").strip()
     preis = request.form.get("preis", "").strip()
     region = request.form.get("region", "").strip()
+
+    # Formular-Daten auslesen
+    form_data = request.form  # <--- werkzeug.datastructures.ImmutableMultiDict
+
+    # In ein normales Dictionary umwandeln
+    data_dict = form_data.to_dict()
+
+    # Optional: Werte umwandeln oder prüfen
+    data_dict["preis"] = int(data_dict["preis"]) if "preis" in data_dict else None
+
+    # Übergabe an scraper.py
+    # result = scrape_data(form_data)
+
+    print(data_dict)
+    # Beispielausgabe: {'produkt': 'Apfel', 'preis': 2, 'region': 'Zürich'}
+
+    # return jsonify({"empfangen": data_dict})
 
     # in CSV schreiben
     append_row(produkt_url=produkt, preis=preis, region=region)
