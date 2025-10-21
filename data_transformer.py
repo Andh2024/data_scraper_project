@@ -141,3 +141,9 @@ print(f"Bereinigung abgeschlossen. Neue Datei gespeichert unter: {output_path}\n
 # ----------------------------
 
 print("Phase 2 erfolgreich abgeschlossen – Daten sind bereit für Phase 3!")
+
+# ----------------------------
+# Sicherer Einstiegspunkt
+# ----------------------------
+if __name__ == "__main__":
+    print("Script wurde direkt ausgeführt – Datenbereinigung erfolgreich beendet.")
