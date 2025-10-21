@@ -1,6 +1,6 @@
 import time
 import csv
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -16,11 +16,8 @@ from bs4 import BeautifulSoup
 RESULTS_CONTAINER_SELECTOR = (
     ".srp-river-main, ul.srp-results, .srp-results, .s-card__grid, .srp-list"
 )
-
-# Einzelangebot (neues Layout: s-card; klassisch: s-item)
 ITEMS_SELECTOR = "li.s-card, div.s-card, li.s-item, div.s-item"
 
-# Titel
 TITLE_SELECTOR = (
     ".s-card__title .su-styled-text.primary.default, "
     ".s-card__title [class*='su-styled-text'], "
@@ -28,7 +25,6 @@ TITLE_SELECTOR = (
     ".s-item__title"
 )
 
-# Preis – zielt auf den Preis-Span in der Attributzeile
 PRICE_SELECTOR = (
     ".s-card__attribute-row .s-card__price, "
     ".su-card-container__attributes__primary .s-card__price, "
@@ -36,7 +32,6 @@ PRICE_SELECTOR = (
     ".s-item__price"
 )
 
-# Standort/Versand: beide benutzen die gleiche Klasse → beide einsammeln und unterscheiden
 ATTR_ROW_TEXTS_SELECTOR = (
     ".s-card__attribute-row .su-styled-text.secondary.italic.large, "
     ".s-card__attribute-row .su-styled-text.secondary.large, "
@@ -44,7 +39,6 @@ ATTR_ROW_TEXTS_SELECTOR = (
     ".s-item__itemLocation"
 )
 
-# Zustand
 CONDITION_SELECTOR = (
     ".s-card__subtitle-row .su-styled-text.secondary.default, "
     ".s-card__subtitle .su-styled-text.secondary.default, "
@@ -52,20 +46,16 @@ CONDITION_SELECTOR = (
     ".s-item__subtitle .SECONDARY_INFO"
 )
 
-# Direktlink
 LINK_SELECTOR = "a.s-item__link, a[role='link'][href*='/itm/'], a[href*='/itm/']"
-
-# Nächste Seite
 NEXT_SELECTOR = ".pagination__next, a[rel='next'], a[aria-label='Weiter']"
 
 # =========================
 # Konfiguration
 # =========================
 START_URL = "https://www.ebay.ch/sch/119544/i.html?_nkw=gitarre&_from=R40&_ipg=240"
-OUT_CSV = "ebay_gitarre_listings_apple.csv"
+OUT_CSV = "scraping_output.csv"
 MAX_PAGES = 10
 
-# Unerwünschte Screenreader-Phrasen im Titel entfernen
 TITLE_BAD_PHRASES = [
     "wird in neuem fenster oder tab geöffnet",
     "wird in neuem fenster geöffnet",
@@ -73,6 +63,17 @@ TITLE_BAD_PHRASES = [
     "öffnet sich in einem neuen fenster oder tab",
     "opens in a new window or tab",
     "open in a new window or tab",
+]
+
+# Titel, die grundsätzlich übersprungen werden (Promo/Ads/Shop-Tiles)
+BAD_TITLE_SUBSTRINGS = [
+    "shop on ebay",
+    "shoppen auf ebay",
+    "gesponsert",
+    "sponsored",
+    "anzeige",
+    "advertisement",
+    "ad:",
 ]
 
 
@@ -172,17 +173,7 @@ def _clean_title(title: str) -> str:
     return t
 
 
-from typing import Tuple
-
-
 def _extract_location_and_shipping(card: BeautifulSoup) -> Tuple[str, str]:
-    """
-    Liest alle sekundären Attributtexte (gleiche Klasse) ein und unterscheidet:
-    - versand: enthält 'versand' (de) ODER beginnt mit '+' (Preisaufschlag)
-    - land:    enthält 'aus ' (de) oder 'from ' (en)
-    Gibt (land, versand) zurück.
-    Wenn kein 'aus ...' vorkommt, wird automatisch 'aus Schweiz' gesetzt.
-    """
     texts = [
         el.get_text(" ", strip=True)
         for el in card.select(ATTR_ROW_TEXTS_SELECTOR)
@@ -201,21 +192,21 @@ def _extract_location_and_shipping(card: BeautifulSoup) -> Tuple[str, str]:
                 land = t
             continue
 
-    # Fallback: wenn kein 'aus ...' gefunden wurde, aber es gibt zwei Werte,
-    # nimm den, der NICHT Versand enthält, als Standort
     if not land and texts:
         candidates = [t for t in texts if "versand" not in t.lower()]
         if candidates:
             land = candidates[-1]
 
-    # 🔧 Neuer Zusatz: wenn kein "aus" im Text steht, Standardwert "aus Schweiz"
     if not land or "aus" not in land.lower():
         land = "aus Schweiz"
 
     return land, versand
 
 
-def parse_items_from_html(html: str) -> List[Dict]:
+# =========================
+# Kernparser (mit Filter für Promo + Dedupe)
+# =========================
+def parse_items_from_html(html: str, seen_links: set) -> List[Dict]:
     soup = BeautifulSoup(html, "html.parser")
     cards = soup.select(ITEMS_SELECTOR)
     rows: List[Dict] = []
@@ -223,13 +214,27 @@ def parse_items_from_html(html: str) -> List[Dict]:
     print(f"🔎 Karten gefunden (ITEMS_SELECTOR): {len(cards)}")
 
     for card in cards:
-        title = _clean_title(_sel_text(card, TITLE_SELECTOR))
-        if not title or title.lower() in {"shoppen auf ebay", "anzeige", "gesponsert"}:
+        title = _clean_title(_sel_text(card, TITLE_SELECTOR)).strip()
+        if not title:
+            continue
+
+        # 1) Promo-/Teaser-/Ad-Karten nach Titel ausschließen
+        low = title.lower()
+        if any(bad in low for bad in BAD_TITLE_SUBSTRINGS):
             continue
 
         link = _sel_href(card, LINK_SELECTOR)
         if not link:
             continue
+
+        # 2) Nur echte Artikelseiten akzeptieren
+        if "/itm/" not in link:
+            continue
+
+        # 3) Deduplizieren (seitenübergreifend)
+        if link in seen_links:
+            continue
+        seen_links.add(link)
 
         price = _sel_text(card, PRICE_SELECTOR)
         condition = _sel_text(card, CONDITION_SELECTOR)
@@ -240,11 +245,12 @@ def parse_items_from_html(html: str) -> List[Dict]:
                 "titel": title,
                 "aktualitaet": condition,
                 "preis": price,
-                "land": land,  # ← jetzt sauber: „aus Deutschland“
-                "versand": versand,  # ← zusätzliche Spalte, z. B. „+CHF 27,63 Versand“
+                "land": land,
+                "versand": versand,
                 "link": link,
             }
         )
+
     return rows
 
 
@@ -256,6 +262,7 @@ def scrape_all(
 ) -> List[Dict]:
     all_rows: List[Dict] = []
     current_url = start_url
+    seen_links: set = set()  # globales Set für Dedupe über alle Seiten
 
     for page in range(1, max_pages + 1):
         print(f"\n➡️  Lade Seite {page}: {current_url}")
@@ -275,12 +282,10 @@ def scrape_all(
                 f.write(html)
             print("🧩 Debug gespeichert: debug_page1.html")
 
-        page_rows = parse_items_from_html(html)
-        print(f"   → {len(page_rows)} verwertbare Angebote")
-        if not page_rows:
+        page_rows = parse_items_from_html(html, seen_links)
+        print(f"   → {len(page_rows)} verwertbare Angebote (nach Filter)")
+        if not page_rows and page == 1:
             print("⚠️  Keine Angebote geparst. Prüfe debug_page1.html und Selektoren.")
-            break
-
         all_rows.extend(page_rows)
 
         soup = BeautifulSoup(html, "html.parser")
