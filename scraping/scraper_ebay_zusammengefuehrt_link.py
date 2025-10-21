@@ -15,10 +15,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.remote.webdriver import WebDriver
 
-# Chrome helper imports
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.chrome.options import Options as ChromeOptions
-from webdriver_manager.chrome import ChromeDriverManager
 
 from bs4 import BeautifulSoup
 
@@ -133,6 +129,11 @@ def setup_driver(headless: bool = HEADLESS) -> WebDriver:
 
 def _start_chrome(headless: bool) -> WebDriver:
     """Initialisiert Chrome über webdriver-manager (Windows-Variante)."""
+    # Chrome helper imports
+    from selenium.webdriver.chrome.service import Service as ChromeService
+    from selenium.webdriver.chrome.options import Options as ChromeOptions
+    from webdriver_manager.chrome import ChromeDriverManager
+
     options = ChromeOptions()
     if headless:
         options.add_argument("--headless=new")
