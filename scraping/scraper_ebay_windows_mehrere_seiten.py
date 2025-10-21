@@ -4,6 +4,7 @@
 import time
 import csv
 import logging
+import os
 from typing import List, Dict
 import re
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
