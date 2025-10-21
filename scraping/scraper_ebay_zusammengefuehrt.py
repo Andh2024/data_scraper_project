@@ -69,7 +69,7 @@ NEXT_SELECTOR = ".pagination__next, a[rel='next'], a[aria-label='Weiter']"
 # =========================
 START_URL = "https://www.ebay.ch/sch/119544/i.html?_nkw=gitarre&_from=R40&_ipg=240"
 OUT_CSV = "scraping_output.csv"
-MAX_PAGES = 10
+MAX_PAGES = 2
 HEADLESS = False  # gilt nur für Chrome-Start; Safari ignoriert dieses Flag
 
 TITLE_BAD_PHRASES = [
@@ -259,7 +259,7 @@ def _extract_location_and_shipping(card: BeautifulSoup) -> Tuple[str, str]:
 
     for t in texts:
         tl = t.lower()
-        if ("versand" in tl) or t.strip().startswith("+"):
+        if ("Versandkosten" in tl) or t.strip().startswith("+"):
             if not versand:
                 versand = t
             continue
@@ -269,7 +269,7 @@ def _extract_location_and_shipping(card: BeautifulSoup) -> Tuple[str, str]:
             continue
 
     if not land and texts:
-        candidates = [t for t in texts if "versand" not in t.lower()]
+        candidates = [t for t in texts if "Versandkosten" not in t.lower()]
         if candidates:
             land = candidates[-1]
 
@@ -359,13 +359,13 @@ def parse_items_from_html(html: str, seen_links: set) -> List[Dict]:
 
         rows.append(
             {
-                "titel": title,
-                "aktualitaet": condition,
-                "preis": price,
-                "land": land,
-                "versand": versand,
-                "link": link,
-                "image": image,  # neu: Bild-URL als letzte Spalte
+                "Titel": title,
+                "Zustand": condition,
+                "Preis": price,
+                "Land": land,
+                "Versandkosten": versand,
+                "Link": link,
+                "Link zum Bild": image,  # neu: Bild-URL als letzte Spalte
             }
         )
 
@@ -425,7 +425,15 @@ def scrape_all(
 # CSV Export
 # =========================
 def save_to_csv(items: List[Dict], filename: str = OUT_CSV) -> None:
-    fieldnames = ["titel", "aktualitaet", "preis", "land", "versand", "link", "image"]
+    fieldnames = [
+        "Titel",
+        "Zustand",
+        "Preis",
+        "Land",
+        "Versandkosten",
+        "Link",
+        "Link zum Bild",
+    ]
     with open(filename, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)
         w.writeheader()
