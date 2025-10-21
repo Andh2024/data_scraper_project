@@ -1,6 +1,22 @@
 import csv
 import os
 from pathlib import Path
+import os
+import time
+import csv
+from typing import List, Dict, Optional, Tuple
+import logging
+import re
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, WebDriverException
+from selenium.webdriver.remote.webdriver import WebDriver
+
+
+from bs4 import BeautifulSoup
 
 # from typing import List, Dict, Any
 
@@ -177,32 +193,11 @@ if __name__ == "__main__":
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os
-import time
-import csv
-from typing import List, Dict, Optional, Tuple
-import logging
-import re
-
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, WebDriverException
-from selenium.webdriver.remote.webdriver import WebDriver
-
-
-from bs4 import BeautifulSoup
-
-
 # Baut die Start-URL dynamisch mit dem Produktnamen
 BASE_URL = (
     "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313"
 )
 START_URL = BASE_URL.format(produkt)
-
-print(START_URL)
-
 
 # =========================
 # Selektoren zentral definieren
