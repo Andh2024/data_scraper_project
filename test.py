@@ -127,6 +127,17 @@ def submit():
     preis = request.form.get("preis", "").strip()
     region = request.form.get("region", "").strip()
 
+    # START_URL = "https://www.ebay.ch/sch/119544/i.html?_nkw=gitarre&_from=R40&_ipg=240"
+
+    # Import von Eingabe aus Fronted
+    # Baut die Start-URL dynamisch mit dem Produktnamen
+
+    BASE_URL = (
+        "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313"
+    )
+    START_URL = BASE_URL.format(produkt)
+
+    print("Die URL ist:" + START_URL)
     # Formular-Daten auslesen
     form_data = request.form  # <--- werkzeug.datastructures.ImmutableMultiDict
 
@@ -194,10 +205,8 @@ if __name__ == "__main__":
 # -*- coding: utf-8 -*-
 
 # Baut die Start-URL dynamisch mit dem Produktnamen
-BASE_URL = (
-    "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313"
-)
-START_URL = BASE_URL.format(produkt)
+# BASE_URL = "https://www.ebay.ch/sch/i.html?_nkw={}&_from=R40&_ipg=240"
+# START_URL = BASE_URL.format(produkt)
 
 # =========================
 # Selektoren zentral definieren
@@ -244,12 +253,12 @@ NEXT_SELECTOR = ".pagination__next, a[rel='next'], a[aria-label='Weiter']"
 # =========================
 # Konfiguration
 # =========================
-from app import produkt
+# from app import produkt
 
-BASE_URL = (
-    "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313"
-)
-START_URL = BASE_URL.format(produkt)
+# BASE_URL = (
+# "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313"
+# )
+# START_URL = BASE_URL.format(produkt)
 OUT_CSV = "scraping_output.csv"
 MAX_PAGES = 10
 HEADLESS = False  # gilt nur für Chrome-Start; Safari ignoriert dieses Flag
@@ -623,7 +632,7 @@ def save_to_csv(items: List[Dict], filename: str = OUT_CSV) -> None:
 # =========================
 # main
 # =========================
-def main(produkt) -> None:
+def main() -> None:
     driver = setup_driver()
     try:
         logger.info("Starte Scraping…")
