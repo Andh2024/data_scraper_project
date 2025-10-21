@@ -25,20 +25,14 @@
                     <!-- Produkt -->
                     <div>
                         <label for="produkt" class="form-label">Produkt</label>
-                        <select id="produkt" name="produkt" class="form-select" required>
-                            <option value="" selected disabled>Produkt</option>
-                            <option value="https://www.ebay.ch/b/PC-Notebooks-Netbooks/177/bn_466644">PC Notebooks
-                            </option>
-                            <option value="https://www.ebay.ch/b/Apple-Notebooks/111422/bn_466752">Apple Notebooks
-                            </option>
-                            <option value="https://www.ebay.ch/b/Computer-Tablets-Netzwerk/58058/bn_1845234">Notebooks
-                                generell</option>
-                        </select>
+                        <input type="text" id="produkt" name="produkt" class="form-control"
+                            placeholder="z. B. PC Notebooks, Apple Notebooks, Notebooks allgemein" required>
+                        <div class="form-text">Gib einen Produktnamen oder Suchbegriff ein.</div>
                     </div>
 
                     <!-- Preis -->
                     <div>
-                        <label for="preis" class="form-label">Preis</label>
+                        <label for="preis" class="form-label">Max. Preis</label>
                         <div class="input-group">
                             <span class="input-group-text">CHF</span>
                             <input type="number" id="preis" name="preis" class="form-control" min="0" step="50"
