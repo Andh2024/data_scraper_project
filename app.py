@@ -6,7 +6,7 @@ from pathlib import Path
 
 from flask import Flask, render_template, request, redirect, url_for, session
 
-# from scraper import scrape_data
+from scraper_ebay import main
 
 # -----------------------------------------------------------------------------
 # Flask-App
