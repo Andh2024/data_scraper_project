@@ -22,6 +22,14 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 from bs4 import BeautifulSoup
 
+# Import von Eingabe aus Fronted
+from app import produkt
+
+# Baut die Start-URL dynamisch mit dem Produktnamen
+BASE_URL = (
+    "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313"
+)
+START_URL = BASE_URL.format(produkt)
 # =========================
 # Selektoren zentral definieren
 # =========================
@@ -67,7 +75,12 @@ NEXT_SELECTOR = ".pagination__next, a[rel='next'], a[aria-label='Weiter']"
 # =========================
 # Konfiguration
 # =========================
-START_URL = "https://www.ebay.ch/sch/119544/i.html?_nkw=gitarre&_from=R40&_ipg=240"
+from app import produkt
+
+BASE_URL = (
+    "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313"
+)
+START_URL = BASE_URL.format(produkt)
 OUT_CSV = "scraping_output.csv"
 MAX_PAGES = 10
 HEADLESS = False  # gilt nur für Chrome-Start; Safari ignoriert dieses Flag

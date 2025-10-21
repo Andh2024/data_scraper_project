@@ -6,7 +6,6 @@ import time
 import csv
 from typing import List, Dict, Optional, Tuple
 import logging
-import re
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -21,6 +20,15 @@ from selenium.webdriver.chrome.options import Options as ChromeOptions
 from webdriver_manager.chrome import ChromeDriverManager
 
 from bs4 import BeautifulSoup
+
+# Import von Eingabe aus Fronted
+from app import produkt
+
+# Baut die Start-URL dynamisch mit dem Produktnamen
+BASE_URL = (
+    "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313"
+)
+START_URL = BASE_URL.format(produkt)
 
 # =========================
 # Selektoren zentral definieren
@@ -60,14 +68,17 @@ CONDITION_SELECTOR = (
 
 LINK_SELECTOR = "a.s-item__link, a[role='link'][href*='/itm/'], a[href*='/itm/']"
 
-IMAGE_SELECTOR = "img.s-card__image, img.s-item__image-img, img.s-item__image"
-
 NEXT_SELECTOR = ".pagination__next, a[rel='next'], a[aria-label='Weiter']"
 
 # =========================
 # Konfiguration
 # =========================
-START_URL = "https://www.ebay.ch/sch/119544/i.html?_nkw=gitarre&_from=R40&_ipg=240"
+from app import produkt
+
+BASE_URL = (
+    "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313"
+)
+START_URL = BASE_URL.format(produkt)
 OUT_CSV = "scraping_output.csv"
 MAX_PAGES = 10
 HEADLESS = False  # gilt nur für Chrome-Start; Safari ignoriert dieses Flag
@@ -222,7 +233,7 @@ def lazy_scroll(driver: WebDriver, steps: int = 6, pause: float = 0.8) -> None:
 
 
 # =========================
-# Parsing-Helfer (inkl. Bild-Extraktion)
+# Parsing-Helfer
 # =========================
 def _sel_text(root: BeautifulSoup, selector: str) -> str:
     el = root.select_one(selector)
@@ -279,48 +290,6 @@ def _extract_location_and_shipping(card: BeautifulSoup) -> Tuple[str, str]:
     return land, versand
 
 
-def _parse_srcset_first(srcset: str) -> str:
-    if not srcset:
-        return ""
-    parts = [p.strip() for p in srcset.split(",") if p.strip()]
-    if not parts:
-        return ""
-    first = parts[0]
-    return first.split()[0]
-
-
-def _parse_src_value(val: str) -> str:
-    if not val:
-        return ""
-    val = val.strip()
-    if "," in val and " " in val:
-        return _parse_srcset_first(val)
-    return val
-
-
-def _extract_image_url(img_el) -> str:
-    """
-    Liefert die bestmögliche Bild-URL aus einem <img>-Element.
-    Priorität: src -> data-src/data-img/data-srcset/data-lazy -> srcset.
-    """
-    if img_el is None:
-        return ""
-    # 1) src direkt (häufigste)
-    src = img_el.get("src")
-    if src:
-        return src.strip()
-    # 2) lazy-load Attribute
-    for attr in ("data-src", "data-img", "data-srcset", "data-lazy"):
-        val = img_el.get(attr)
-        if val:
-            return _parse_src_value(val)
-    # 3) srcset-Fallback
-    srcset = img_el.get("srcset")
-    if srcset:
-        return _parse_srcset_first(srcset)
-    return ""
-
-
 # =========================
 # Kernparser (mit Filter für Promo + Dedupe)
 # =========================
@@ -354,8 +323,6 @@ def parse_items_from_html(html: str, seen_links: set) -> List[Dict]:
         price = _sel_text(card, PRICE_SELECTOR)
         condition = _sel_text(card, CONDITION_SELECTOR)
         land, versand = _extract_location_and_shipping(card)
-        image_el = card.select_one(IMAGE_SELECTOR)
-        image = _extract_image_url(image_el)
 
         rows.append(
             {
@@ -365,7 +332,6 @@ def parse_items_from_html(html: str, seen_links: set) -> List[Dict]:
                 "land": land,
                 "versand": versand,
                 "link": link,
-                "image": image,  # neu: Bild-URL als letzte Spalte
             }
         )
 
@@ -425,7 +391,7 @@ def scrape_all(
 # CSV Export
 # =========================
 def save_to_csv(items: List[Dict], filename: str = OUT_CSV) -> None:
-    fieldnames = ["titel", "aktualitaet", "preis", "land", "versand", "link", "image"]
+    fieldnames = ["titel", "aktualitaet", "preis", "land", "versand", "link"]
     with open(filename, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)
         w.writeheader()
