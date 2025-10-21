@@ -10,6 +10,7 @@ Funktion:
 Abhängigkeiten:
 - pandas
 - unidecode
+- flake8
 """
 
 import pandas as pd
@@ -19,7 +20,7 @@ from unidecode import unidecode
 # 1. CSV-Datei einlesen
 # ----------------------------
 
-# Pfad zur CSV-Datei (aus Phase 1)
+# Pfad zur CSV-Datei (aus "scraper.py")
 input_path = "fake_scraped_guitars.csv"
 output_path = "clean_guitars.csv"
 
@@ -140,7 +141,7 @@ print(f"Bereinigung abgeschlossen. Neue Datei gespeichert unter: {output_path}\n
 # 7. Abschlussmeldung
 # ----------------------------
 
-print("Phase 2 erfolgreich abgeschlossen – Daten sind bereit für Phase 3!")
+print("data_transformer.py erfolgreich abgeschlossen – Daten sind bereit für app.py!")
 
 # ----------------------------
 # Sicherer Einstiegspunkt
