@@ -32,9 +32,10 @@ TITLE_SELECTOR = "h3"
 PRICE_SELECTOR = "span.bsig__price--displayprice"
 CONDITION_SELECTOR = "span.bsig__listingCondition"
 LINK_SELECTOR = "a[href*='/itm/']"
+IMAGE_SELECTOR = "img.s-card__image"  # <-- korrekter Bild-Selektor
 # ---------------------------------------------------------
 
-# Log für Anzeige im Terminal konfigurieren. Logging Level INFO kann angepasst werden mit DEBUG (detaillierter), WARNING oder ERROR (weniger detailliert).
+# Logging konfigurieren
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 logger = logging.getLogger("ebay_pager")
 
@@ -47,7 +48,7 @@ def init_driver(headless: bool = True) -> webdriver.Chrome:
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
     opts.add_argument("--window-size=1920,1200")
-    # Generische User-Agent (so kann man sich selber identifizieren)
+    # Generische User-Agent
     opts.add_argument(
         "user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
     )
@@ -69,6 +70,59 @@ def build_page_url(base_url: str, page_number: int) -> str:
     return urlunparse(new_parsed)
 
 
+def _parse_srcset_first(srcset: str) -> str:
+    """
+    Parst ein srcset-Attribut und gibt die erste URL zurück.
+    Beispiel: "https://... 1x, https://... 2x" -> "https://..."
+    """
+    if not srcset:
+        return ""
+    parts = [p.strip() for p in srcset.split(",") if p.strip()]
+    if not parts:
+        return ""
+    first = parts[0]
+    url = first.split()[0]
+    return url
+
+
+def _parse_src_value(val: str) -> str:
+    """Falls val ein srcset-ähnlicher Wert ist, parse das erste URL; sonst trim und return."""
+    if not val:
+        return ""
+    val = val.strip()
+    # Wenn mehrere URLs mit Kommata getrennt sind, nehme erstes Element
+    if "," in val and " " in val:
+        return _parse_srcset_first(val)
+    return val
+
+
+def _extract_image_url(img_el) -> str:
+    """
+    Liefert die beste Bild-URL aus einem <img>-Tag.
+    Priorität: src -> data-src/data-img/data-srcset/data-lazy -> srcset.
+    Gibt leeren String, falls nichts gefunden wird.
+    """
+    if img_el is None:
+        return ""
+    # 1) direktes src zuerst (häufigste und in Ihrem Beispiel vorhanden)
+    src = img_el.get("src")
+    if src:
+        return src.strip()
+
+    # 2) lazy-load Attribute prüfen
+    for attr in ("data-src", "data-img", "data-srcset", "data-lazy"):
+        val = img_el.get(attr)
+        if val:
+            return _parse_src_value(val)
+
+    # 3) srcset-Fallback
+    srcset = img_el.get("srcset")
+    if srcset:
+        return _parse_srcset_first(srcset)
+
+    return ""
+
+
 # Daten scrapen
 def extract_items_from_html(html: str) -> List[Dict[str, str]]:
     soup = BeautifulSoup(html, "html.parser")
@@ -79,11 +133,13 @@ def extract_items_from_html(html: str) -> List[Dict[str, str]]:
         price_el = item.select_one(PRICE_SELECTOR)
         condition_el = item.select_one(CONDITION_SELECTOR)
         link_el = item.select_one(LINK_SELECTOR)
+        image_el = item.select_one(IMAGE_SELECTOR)
 
         title = title_el.get_text(strip=True) if title_el else ""
         price = price_el.get_text(strip=True) if price_el else ""
         condition = condition_el.get_text(strip=True) if condition_el else ""
         link = link_el["href"] if link_el and link_el.has_attr("href") else ""
+        image = _extract_image_url(image_el)
 
         # Item-ID aus URL extrahieren
         item_id = ""
@@ -99,6 +155,7 @@ def extract_items_from_html(html: str) -> List[Dict[str, str]]:
                     "title": title,
                     "price": price,
                     "condition": condition,
+                    "image": image,
                     "link": link,
                 }
             )
@@ -107,7 +164,7 @@ def extract_items_from_html(html: str) -> List[Dict[str, str]]:
 
 # Daten in csv speichern
 def save_csv(filename: str, rows: List[Dict[str, str]]):
-    fieldnames = ["id", "title", "price", "condition", "link"]
+    fieldnames = ["id", "title", "price", "condition", "image", "link"]
     with open(filename, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -120,7 +177,6 @@ def save_csv(filename: str, rows: List[Dict[str, str]]):
 def main():
     driver = init_driver(HEADLESS)
     all_results: List[Dict[str, str]] = []
-    # Cookie-Banner schliessen (falls vorhanden)
     try:
         for page in range(1, MAX_PAGES + 1):
             url = build_page_url(BASE_URL, page)
@@ -144,7 +200,6 @@ def main():
                 break
 
             # neue Items zur Gesamtliste hinzufügen (Duplikate vermeiden)
-            # einfacher Schutz: vermeide Items mit gleicher ID
             existing_ids = {r["id"] for r in all_results if r.get("id")}
             new_added = 0
             for it in page_items:
