@@ -5,7 +5,7 @@ Funktion:
 3. Preis und Währung trennen
 4. Preise in CHF konvertieren (sofern nötig)
 5. Doppelte Einträge entfernen
-6. Einheitliche Struktur exportieren als clean_guitars.csv
+6. Einheitliche Struktur exportieren als clean_guitars_Antonio.csv
 
 Abhängigkeiten:
 - pandas
