@@ -21,18 +21,44 @@ import requests
 import json
 from datetime import datetime, timedelta
 import os
+import argparse
 
 os.makedirs("Antonio_datacleansing", exist_ok=True)
 
 # ----------------------------
-# 1. CSV-Datei einlesen
+# 1. CLI-Argumente & CSV-Datei einlesen
 # ----------------------------
 
-INPUT_PATH = "Antonio_datacleansing/scraping_output_Antonio.csv"
-OUTPUT_PATH = "Antonio_datacleansing/clean_scraping_output_Antonio.csv"
+# Argumentparser konfigurieren
+parser = argparse.ArgumentParser(
+    description="Bereinigt Scraping-Daten (Texte, Preise, Währungen, Länder, Duplikate)."
+)
+parser.add_argument(
+    "--input",
+    type=str,
+    default="Antonio_datacleansing/scraping_output_Antonio.csv",
+    help="Pfad zur Eingabedatei (CSV aus Scraping-Phase).",
+)
+parser.add_argument(
+    "--output",
+    type=str,
+    default="Antonio_datacleansing/clean_scraping_output_Antonio.csv",
+    help="Pfad zur Ausgabedatei (bereinigte CSV).",
+)
+
+args = parser.parse_args()
+
+INPUT_PATH = args.input
+OUTPUT_PATH = args.output
+
+# Sicherstellen, dass Zielverzeichnis existiert
+os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
 
 df = pd.read_csv(INPUT_PATH)
 print(f"Datei geladen: {len(df)} Zeilen, Spalten: {list(df.columns)}\n")
+
+print(f"Input-Datei: {INPUT_PATH}")
+print(f"Output-Datei: {OUTPUT_PATH}\n")
 
 # ----------------------------
 # 2. Texte bereinigen
