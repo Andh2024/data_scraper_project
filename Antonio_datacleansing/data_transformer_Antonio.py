@@ -128,7 +128,39 @@ df["preis_wert"] = df["preis_wert"].round(2)
 df["versand_wert"] = df["versand_wert"].round(2)
 
 # ----------------------------
-# 5. Produktstatus vereinheitlichen
+# 5. Länderbezeichnungen bereinigen
+# ----------------------------
+
+# Mapping-Tabelle: unklare oder gemischte Herkunftsangaben → einheitliche Ländernamen
+country_map = {
+    "aus Deutschland": "Deutschland",
+    "aus Schweiz": "Schweiz",
+    "aus Grossbritannien": "Grossbritannien",
+    "aus Frankreich": "Frankreich",
+    "aus Spanien": "Spanien",
+    "aus Italien": "Italien",
+}
+
+
+def clean_country(value: str) -> str:
+    """Bereinigt Länderangaben, entfernt 'aus' und vereinheitlicht Namen."""
+    if not isinstance(value, str) or value.strip() == "":
+        return "Unbekannt"
+    value = value.strip()
+    # Mapping zuerst prüfen
+    if value in country_map:
+        return country_map[value]
+    # Wenn kein Mapping vorhanden, nur 'aus' entfernen
+    return value.replace("aus ", "").strip()
+
+
+# Neue Spalte 'land' bereinigen
+df["land"] = df["land"].apply(clean_country)
+
+print("Länderbezeichnungen bereinigt.\n")
+
+# ----------------------------
+# 6. Produktstatus vereinheitlichen
 # ----------------------------
 
 
@@ -149,14 +181,14 @@ def normalize_condition(text: str) -> str:
 df["zustand"] = df["aktualitaet"].apply(normalize_condition)
 
 # ----------------------------
-# 6. Doppelte Einträge entfernen
+# 7. Doppelte Einträge entfernen
 # ----------------------------
 
 df.drop_duplicates(subset=["titel", "preis_total_chf", "link"], inplace=True)
 print("Doppelte Einträge entfernt.\n")
 
 # ----------------------------
-# 7. Finale Struktur & Export
+# 8. Finale Struktur & Export
 # ----------------------------
 
 clean_df = df[
@@ -168,4 +200,6 @@ clean_df.to_csv(OUTPUT_PATH, index=False, encoding="utf-8", float_format="%.2f")
 print(f"Bereinigung abgeschlossen. Neue Datei gespeichert unter: {OUTPUT_PATH}\n")
 
 if __name__ == "__main__":
-    print("Normalize-Script erfolgreich ausgeführt – Daten sind bereit für Phase 3.")
+    print(
+        "Normalize-Script erfolgreich ausgeführt – Daten sind bereit für Feature-Frontend."
+    )
