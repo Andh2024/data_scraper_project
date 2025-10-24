@@ -1,16 +1,18 @@
 """
+Data Cleansing und Normalisierung (PriceHunter)
+---------------------------------------------------------
 Funktion:
-1. CSV-Datei laden (Scraping-Daten)
-2. Texte bereinigen (z. B. Umlautfehler, Sonderzeichen)
-3. Preis und Währung trennen
-4. Preise in CHF konvertieren (sofern nötig)
-5. Doppelte Einträge entfernen
+1. CSV-Datei aus "Scraping.py" laden (scraping_output_Antonio.csv)
+2. Texte bereinigen (Umlaute, Leerzeichen, fehlerhafte Kodierungen)
+3. Preis & Versand trennen und in CHF konvertieren
+4. Produktstatus vereinheitlichen (Brandneu, Gebraucht, etc.)
+5. Doppelte Inserate entfernen
 6. Einheitliche Struktur exportieren als clean_guitars_Antonio.csv
 
 Abhängigkeiten:
 - pandas
 - unidecode
-- flake8
+- flake8 (Codequalität)
 """
 
 import pandas as pd
@@ -20,131 +22,124 @@ from unidecode import unidecode
 # 1. CSV-Datei einlesen
 # ----------------------------
 
-# Pfad zur CSV-Datei (aus "scraper.py")
-input_path = "Antonio_datacleansing/fake_scraped_guitars_Antonio.csv"
-output_path = "Antonio_datacleansing/clean_guitars_Antonio.csv"
+INPUT_PATH = "Antonio_datacleansing/scraping_output_Antonio.csv"
+OUTPUT_PATH = "Antonio_datacleansing/clean_scraping_output_Antonio.csv"
 
-# CSV einlesen (Trennzeichen = Komma)
-df = pd.read_csv(input_path)
-
-# Kurze Übersicht der geladenen Daten
-print("Datei erfolgreich geladen!")
-print(f"Spalten: {list(df.columns)}")
-print(f"Anzahl Zeilen: {len(df)}\n")
+df = pd.read_csv(INPUT_PATH)
+print(f"Datei geladen: {len(df)} Zeilen, Spalten: {list(df.columns)}\n")
 
 # ----------------------------
 # 2. Texte bereinigen
 # ----------------------------
 
 
-# Funktion zur Textbereinigung
-def clean_text(text):
-    """
-    Bereinigt Textfelder:
-    - Entfernt fehlerhafte Kodierungen (z. B. ZÃ¼rich → Zürich)
-    - Entfernt überflüssige Leerzeichen
-    - Wandelt alles in Unicode lesbare Form um
-    """
+def clean_text(text: str | None) -> str | None:
+    """Korrigiert Kodierung, entfernt Leerzeichen und vereinheitlicht Text."""
     if isinstance(text, str):
-        text = unidecode(text)  # korrigiert Umlaute
-        text = text.strip()  # entfernt Leerzeichen am Anfang/Ende
+        text = unidecode(text)  # ersetzt z. B. Ã¼ → ü
+        text = text.replace("\n", " ").strip()
         return text
     return text
 
 
-# Textspalten bereinigen
-for column in ["Produkt", "Region", "Kategorie"]:
-    df[column] = df[column].apply(clean_text)
+for col in ["titel", "land"]:
+    df[col] = df[col].apply(clean_text)
 
-print("Texte bereinigt (Umlaute, Leerzeichen etc.)\n")
+print("Texte bereinigt.\n")
 
 # ----------------------------
-# 3. Preis & Währung trennen
+# 3. Preis & Versand trennen
 # ----------------------------
 
 
-# Beispiel: "CHF 1'234.56" → Preis = 1234.56, Währung = CHF
-def split_price(value):
-    """
-    Trennt Preis und Währung.
-    Entfernt Kommas, Apostrophe und konvertiert in float.
-    """
+def extract_price(value: str) -> tuple[str | None, float | None]:
+    """Extrahiert Währung und numerischen Preis aus Strings wie 'CHF 33,52'."""
     if not isinstance(value, str):
         return None, None
-
     value = value.replace("'", "").replace(",", ".").strip()
     parts = value.split(" ")
-
-    if len(parts) == 2:
-        currency, price = parts
-    elif "CHF" in value:
-        currency, price = "CHF", value.replace("CHF", "")
-    elif "EUR" in value:
-        currency, price = "EUR", value.replace("EUR", "")
-    else:
-        return None, None
-
-    try:
-        price = float(price)
-    except ValueError:
-        price = None
-
-    return currency, price
+    currency = None
+    amount = None
+    for p in parts:
+        if p.replace(".", "", 1).isdigit():
+            amount = float(p)
+        elif len(p) == 3 and p.isalpha():
+            currency = p.upper()
+    return currency, amount
 
 
-# Neue Spalten anlegen
-df[["Waehrung", "Preis_Wert"]] = df["Preis"].apply(lambda x: pd.Series(split_price(x)))
+def extract_shipping(value: str) -> float:
+    """Extrahiert Versandkosten in CHF oder 0 bei 'Kostenloser Versand'."""
+    if not isinstance(value, str) or value.strip() == "":
+        return 0.0
+    if "Kostenlos" in value:
+        return 0.0
+    currency, amount = extract_price(value)
+    return amount if amount else 0.0
 
-print("Preise und Währungen getrennt\n")
+
+df[["waehrung", "preis_wert"]] = df["preis"].apply(
+    lambda x: pd.Series(extract_price(x))
+)
+df["versand_wert"] = df["versand"].apply(extract_shipping)
+
+print("Preis- und Versandfelder extrahiert.\n")
 
 # ----------------------------
 # 4. Preise in CHF konvertieren
 # ----------------------------
 
-# Einfacher Umrechnungsfaktor (EUR → CHF)
-EUR_TO_CHF = 0.95  # Beispielkurs
+FX_RATES = {"EUR": 0.95, "USD": 0.88, "GBP": 0.77, "CHF": 1.0}
 
 
-def convert_to_chf(row):
-    """
-    Wandelt Preise in CHF um, falls sie in EUR angegeben sind.
-    """
-    if row["Waehrung"] == "EUR" and row["Preis_Wert"] is not None:
-        return round(row["Preis_Wert"] / EUR_TO_CHF, 2)
-    else:
-        return row["Preis_Wert"]
+def convert_to_chf(row) -> float:
+    """Konvertiert Preis (inkl. Versand) in CHF."""
+    rate = FX_RATES.get(row["waehrung"], 1.0)
+    total = (row["preis_wert"] or 0) + (row["versand_wert"] or 0)
+    return round(total / rate, 2)
 
 
-df["Preis_CHF"] = df.apply(convert_to_chf, axis=1)
-
-print("Alle Preise auf CHF vereinheitlicht\n")
+df["preis_total_chf"] = df.apply(convert_to_chf, axis=1)
+print("Preise einheitlich in CHF umgerechnet.\n")
 
 # ----------------------------
-# 5. Doppelte Einträge entfernen
+# 5. Produktstatus vereinheitlichen
 # ----------------------------
 
-df.drop_duplicates(subset=["Produkt", "Preis_CHF", "Region"], inplace=True)
-print("Doppelte Datensätze entfernt\n")
+
+def normalize_condition(text: str) -> str:
+    """Extrahiert und vereinheitlicht Zustandsangabe (neu/gebraucht)."""
+    if not isinstance(text, str):
+        return "unbekannt"
+    text = text.lower()
+    if "neu" in text or "brandneu" in text:
+        return "neu"
+    if "gebraucht" in text:
+        return "gebraucht"
+    if "ersatzteil" in text:
+        return "defekt"
+    return "unbekannt"
+
+
+df["zustand"] = df["aktualitaet"].apply(normalize_condition)
 
 # ----------------------------
-# 6. Finale Struktur & Export
+# 6. Doppelte Einträge entfernen
 # ----------------------------
 
-# Relevante Spalten in neuer Reihenfolge
-clean_df = df[["id", "Produkt", "Preis_CHF", "Region", "Kategorie", "Link"]]
-
-# Export als neue CSV-Datei
-clean_df.to_csv(output_path, index=False, encoding="utf-8")
-print(f"Bereinigung abgeschlossen. Neue Datei gespeichert unter: {output_path}\n")
+df.drop_duplicates(subset=["titel", "preis_total_chf", "link"], inplace=True)
+print("Doppelte Einträge entfernt.\n")
 
 # ----------------------------
-# 7. Abschlussmeldung
+# 7. Finale Struktur & Export
 # ----------------------------
 
-print("data_transformer.py erfolgreich abgeschlossen – Daten sind bereit für app.py!")
+clean_df = df[
+    ["titel", "zustand", "preis_total_chf", "land", "versand_wert", "link"]
+].copy()
 
-# ----------------------------
-# Sicherer Einstiegspunkt
-# ----------------------------
+clean_df.to_csv(OUTPUT_PATH, index=False, encoding="utf-8")
+print(f"Bereinigung abgeschlossen. Neue Datei gespeichert unter: {OUTPUT_PATH}\n")
+
 if __name__ == "__main__":
-    print("Script wurde direkt ausgeführt – Datenbereinigung erfolgreich beendet.")
+    print("Normalize-Script erfolgreich ausgeführt – Daten sind bereit für Phase 3.")
