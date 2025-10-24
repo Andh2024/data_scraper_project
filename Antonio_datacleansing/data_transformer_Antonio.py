@@ -52,30 +52,37 @@ print("Texte bereinigt.\n")
 # ----------------------------
 
 
-def extract_price(value: str) -> tuple[str | None, float | None]:
-    """Extrahiert Währung und numerischen Preis aus Strings wie 'CHF 33,52'."""
-    if not isinstance(value, str):
-        return None, None
+def extract_price(value: str) -> tuple[str | None, float]:
+    """Extrahiert Währung und numerischen Preis aus Strings wie 'CHF 33,52'.
+    Gibt 0.00 zurück, wenn kein Preis erkannt wird (immer mit zwei Dezimalstellen).
+    """
+    if not isinstance(value, str) or value.strip() == "":
+        return None, 0.00
+
     value = value.replace("'", "").replace(",", ".").strip()
     parts = value.split(" ")
     currency = None
-    amount = None
+    amount = 0.00  # Standardwert
+
     for p in parts:
         if p.replace(".", "", 1).isdigit():
-            amount = float(p)
+            amount = round(float(p), 2)  # hier wird auf zwei Nachkommastellen gerundet
         elif len(p) == 3 and p.isalpha():
             currency = p.upper()
+
     return currency, amount
 
 
 def extract_shipping(value: str) -> float:
-    """Extrahiert Versandkosten in CHF oder 0 bei 'Kostenloser Versand'."""
+    """Extrahiert Versandkosten in CHF oder 0.00 bei 'Kostenloser Versand'.
+    Gibt immer eine Zahl mit zwei Dezimalstellen zurück.
+    """
     if not isinstance(value, str) or value.strip() == "":
-        return 0.0
+        return 0.00
     if "Kostenlos" in value:
-        return 0.0
+        return 0.00
     currency, amount = extract_price(value)
-    return amount if amount else 0.0
+    return round(amount, 2) if amount else 0.00
 
 
 df[["waehrung", "preis_wert"]] = df["preis"].apply(
