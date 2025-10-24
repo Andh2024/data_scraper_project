@@ -61,19 +61,6 @@ print(f"Input-Datei: {INPUT_PATH}")
 print(f"Output-Datei: {OUTPUT_PATH}\n")
 
 # ----------------------------
-# 1a. Schema-Validierung (Pflichtspalten prüfen)
-# ----------------------------
-REQUIRED_COLUMNS = ["titel", "aktualitaet", "preis", "land", "versand", "link"]
-missing_cols = [c for c in REQUIRED_COLUMNS if c not in df.columns]
-
-if missing_cols:
-    print(f"⚠️ Fehlende Pflichtspalten im Eingabefile: {missing_cols}")
-    print("Bitte Scraping-Datei überprüfen – Bereinigung wird abgebrochen.")
-    exit(1)  # Skript sicher beenden
-else:
-    print("Schema-Check erfolgreich: Alle Pflichtspalten vorhanden.\n")
-
-# ----------------------------
 # 2. Texte bereinigen
 # ----------------------------
 
