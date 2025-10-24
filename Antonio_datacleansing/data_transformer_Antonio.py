@@ -11,12 +11,13 @@ Funktion:
 
 Abhängigkeiten:
 - pandas
-- unidecode
+- ftfy
 - flake8 (Codequalität)
 """
 
 import pandas as pd
-from unidecode import unidecode
+import re
+from ftfy import fix_text
 
 # ----------------------------
 # 1. CSV-Datei einlesen
@@ -25,8 +26,12 @@ from unidecode import unidecode
 INPUT_PATH = "Antonio_datacleansing/scraping_output_Antonio.csv"
 OUTPUT_PATH = "Antonio_datacleansing/clean_scraping_output_Antonio.csv"
 
-df = pd.read_csv(INPUT_PATH)
-print(f"Datei geladen: {len(df)} Zeilen, Spalten: {list(df.columns)}\n")
+df = pd.read_csv(INPUT_PATH, encoding_errors="replace")
+
+from ftfy import fix_encoding
+
+for col in ["titel", "land"]:
+    df[col] = df[col].apply(lambda x: fix_encoding(x) if isinstance(x, str) else x)
 
 # ----------------------------
 # 2. Texte bereinigen
@@ -34,18 +39,24 @@ print(f"Datei geladen: {len(df)} Zeilen, Spalten: {list(df.columns)}\n")
 
 
 def clean_text(text: str | None) -> str | None:
-    """Korrigiert Kodierung, entfernt Leerzeichen und vereinheitlicht Text."""
-    if isinstance(text, str):
-        text = unidecode(text)  # ersetzt z. B. Ã¼ → ü
-        text = text.replace("\n", " ").strip()
+    """
+    Korrigiert fehlerhafte Kodierungen (z. B. 'ZÃ¼rich' → 'Zürich'),
+    behält aber Umlaute wie ä, ö, ü bei.
+    """
+    if not isinstance(text, str):
         return text
+
+    text = text.strip().replace("\n", " ")
+
+    # Immer ftfy verwenden, da es Umlaute repariert und beibehält
+    text = fix_text(text)
     return text
 
 
 for col in ["titel", "land"]:
     df[col] = df[col].apply(clean_text)
 
-print("Texte bereinigt.\n")
+print("Texte bereinigt (intelligente Kodierungsprüfung aktiv).\n")
 
 # ----------------------------
 # 3. Preis & Versand trennen
