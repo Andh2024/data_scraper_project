@@ -11,13 +11,12 @@ Funktion:
 
 Abhängigkeiten:
 - pandas
-- ftfy
+- unidecode
 - flake8 (Codequalität)
 """
 
 import pandas as pd
-import re
-from ftfy import fix_text
+from unidecode import unidecode
 
 # ----------------------------
 # 1. CSV-Datei einlesen
@@ -26,12 +25,8 @@ from ftfy import fix_text
 INPUT_PATH = "Antonio_datacleansing/scraping_output_Antonio.csv"
 OUTPUT_PATH = "Antonio_datacleansing/clean_scraping_output_Antonio.csv"
 
-df = pd.read_csv(INPUT_PATH, encoding_errors="replace")
-
-from ftfy import fix_encoding
-
-for col in ["titel", "land"]:
-    df[col] = df[col].apply(lambda x: fix_encoding(x) if isinstance(x, str) else x)
+df = pd.read_csv(INPUT_PATH)
+print(f"Datei geladen: {len(df)} Zeilen, Spalten: {list(df.columns)}\n")
 
 # ----------------------------
 # 2. Texte bereinigen
@@ -39,69 +34,93 @@ for col in ["titel", "land"]:
 
 
 def clean_text(text: str | None) -> str | None:
-    """
-    Korrigiert fehlerhafte Kodierungen (z. B. 'ZÃ¼rich' → 'Zürich'),
-    behält aber Umlaute wie ä, ö, ü bei.
-    """
-    if not isinstance(text, str):
+    """Korrigiert Kodierung, entfernt Leerzeichen und vereinheitlicht Text."""
+    if isinstance(text, str):
+        text = unidecode(text)  # ersetzt z. B. Ã¼ → ü
+        text = text.replace("\n", " ").strip()
         return text
-
-    text = text.strip().replace("\n", " ")
-
-    # Immer ftfy verwenden, da es Umlaute repariert und beibehält
-    text = fix_text(text)
     return text
 
 
 for col in ["titel", "land"]:
     df[col] = df[col].apply(clean_text)
 
-print("Texte bereinigt (intelligente Kodierungsprüfung aktiv).\n")
+print("Texte bereinigt.\n")
 
 # ----------------------------
-# 3. Preis & Versand trennen
+# 3. Preis & Währung trennen (vektorisiert)
 # ----------------------------
+import re
 
+# 1) Währungs-Mapping
+currency_map = {
+    "CHF": "CHF",
+    "FR": "CHF",
+    "FR.": "CHF",
+    "SFR": "CHF",
+    "SFR.": "CHF",
+    "EUR": "EUR",
+    "€": "EUR",
+    "USD": "USD",
+    "$": "USD",
+    "GBP": "GBP",
+    "£": "GBP",
+}
 
-def extract_price(value: str) -> tuple[str | None, float]:
-    """Extrahiert Währung und numerischen Preis aus Strings wie 'CHF 33,52'.
-    Gibt 0.00 zurück, wenn kein Preis erkannt wird (immer mit zwei Dezimalstellen).
-    """
-    if not isinstance(value, str) or value.strip() == "":
-        return None, 0.00
-
-    value = value.replace("'", "").replace(",", ".").strip()
-    parts = value.split(" ")
-    currency = None
-    amount = 0.00  # Standardwert
-
-    for p in parts:
-        if p.replace(".", "", 1).isdigit():
-            amount = round(float(p), 2)  # hier wird auf zwei Nachkommastellen gerundet
-        elif len(p) == 3 and p.isalpha():
-            currency = p.upper()
-
-    return currency, amount
-
-
-def extract_shipping(value: str) -> float:
-    """Extrahiert Versandkosten in CHF oder 0.00 bei 'Kostenloser Versand'.
-    Gibt immer eine Zahl mit zwei Dezimalstellen zurück.
-    """
-    if not isinstance(value, str) or value.strip() == "":
-        return 0.00
-    if "Kostenlos" in value:
-        return 0.00
-    currency, amount = extract_price(value)
-    return round(amount, 2) if amount else 0.00
-
-
-df[["waehrung", "preis_wert"]] = df["preis"].apply(
-    lambda x: pd.Series(extract_price(x))
+# 2) Regex zum Erkennen von Beträgen & Währungen
+price_re = re.compile(
+    r"(?i)\s*(?P<cur1>CHF|S?FR\.?|EUR|€|USD|\$|GBP|£)?\s*"
+    r"(?P<amt>[\d\.\,'’\s]+(?:[.,]\d{1,2})?|\d+\.-)"
+    r"\s*(?P<cur2>CHF|S?FR\.?|EUR|€|USD|\$|GBP|£)?\s*"
 )
-df["versand_wert"] = df["versand"].apply(extract_shipping)
 
-print("Preis- und Versandfelder extrahiert.\n")
+# 3) Ganze Spalte "preis" parsen
+m = df["preis"].astype(str).str.extract(price_re)
+
+# 4) Währung zusammenführen & vereinheitlichen
+df["waehrung"] = (
+    m["cur1"]
+    .fillna(m["cur2"])
+    .str.upper()
+    .str.replace(" ", "", regex=False)
+    .map(currency_map)
+)
+
+
+# 5) Betrag in Float umwandeln
+def _parse_amount(raw: str) -> float | None:
+    if not isinstance(raw, str):
+        return 0.00
+    s = raw.strip().replace("\u00a0", " ").replace("\u202f", " ")
+    s = s.replace(".-", ".00")  # "123.-" → "123.00"
+    digits = re.sub(r"[^\d,\.]", "", s)  # alles außer Ziffern, Punkt, Komma raus
+    if "," in digits and "." in digits:
+        if digits.rfind(",") > digits.rfind("."):
+            digits = digits.replace(".", "").replace(",", ".")
+        else:
+            digits = digits.replace(",", "")
+    elif "," in digits:
+        digits = digits.replace(".", "").replace(",", ".")
+    else:
+        digits = digits.replace(",", "")
+    try:
+        return round(float(digits), 2)
+    except ValueError:
+        return 0.00
+
+
+df["preis_wert"] = m["amt"].map(_parse_amount).fillna(0.00)
+
+# 6) Versandkosten vektorisiert extrahieren
+df["versand_wert"] = (
+    df["versand"]
+    .astype(str)
+    .str.extract(price_re)["amt"]
+    .map(_parse_amount)
+    .fillna(0.00)
+)
+
+print("Preise und Versandfelder (vektorisiert) extrahiert.\n")
 
 # ----------------------------
 # 4. Preise in CHF konvertieren
