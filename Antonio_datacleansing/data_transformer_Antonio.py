@@ -100,14 +100,32 @@ FX_RATES = {"EUR": 0.95, "USD": 0.88, "GBP": 0.77, "CHF": 1.0}
 
 
 def convert_to_chf(row) -> float:
-    """Konvertiert Preis (inkl. Versand) in CHF."""
+    """Konvertiert Preis (inkl. Versand) in CHF.
+    Gibt 0.00 zurück, wenn kein Produktpreis vorhanden ist.
+    """
     rate = FX_RATES.get(row["waehrung"], 1.0)
-    total = (row["preis_wert"] or 0) + (row["versand_wert"] or 0)
+
+    # Kein Produktpreis → kein Gesamtpreis
+    if not isinstance(row["preis_wert"], (int, float)) or row["preis_wert"] == 0.0:
+        return 0.00
+
+    # Versandkosten sicherstellen
+    versand = (
+        row["versand_wert"] if isinstance(row["versand_wert"], (int, float)) else 0.0
+    )
+
+    total = row["preis_wert"] + versand
     return round(total / rate, 2)
 
 
+# Neue Spalte mit Gesamtpreis in CHF
 df["preis_total_chf"] = df.apply(convert_to_chf, axis=1)
-print("Preise einheitlich in CHF umgerechnet.\n")
+
+print("Preise erfolgreich in CHF umgerechnet.\n")
+
+df["preis_total_chf"] = df["preis_total_chf"].round(2)
+df["preis_wert"] = df["preis_wert"].round(2)
+df["versand_wert"] = df["versand_wert"].round(2)
 
 # ----------------------------
 # 5. Produktstatus vereinheitlichen
