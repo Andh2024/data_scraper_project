@@ -163,7 +163,8 @@ clean_df = df[
     ["titel", "zustand", "preis_total_chf", "land", "versand_wert", "link"]
 ].copy()
 
-clean_df.to_csv(OUTPUT_PATH, index=False, encoding="utf-8")
+# Export mit zwei Dezimalstellen bei Float-Werten
+clean_df.to_csv(OUTPUT_PATH, index=False, encoding="utf-8", float_format="%.2f")
 print(f"Bereinigung abgeschlossen. Neue Datei gespeichert unter: {OUTPUT_PATH}\n")
 
 if __name__ == "__main__":
