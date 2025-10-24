@@ -17,12 +17,6 @@ Abhängigkeiten:
 
 import pandas as pd
 from unidecode import unidecode
-import requests
-import json
-from datetime import datetime, timedelta
-import os
-
-os.makedirs("Antonio_datacleansing", exist_ok=True)
 
 # ----------------------------
 # 1. CSV-Datei einlesen
@@ -129,78 +123,27 @@ df["versand_wert"] = (
 print("Preise und Versandfelder (vektorisiert) extrahiert.\n")
 
 # ----------------------------
-# 4. Wechselkurse laden (API + Cache)
+# 4. Preise in CHF konvertieren
 # ----------------------------
 
-FX_CACHE_PATH = "Antonio_datacleansing/fx_cache.json"
-API_URL = "https://open.er-api.com/v6/latest/CHF"
-CURRENCIES = ["EUR", "USD", "GBP", "CHF"]
-
-
-def load_fx_rates():
-    """Lädt tagesaktuelle Wechselkurse oder nutzt Cache bei API-Ausfall."""
-    try:
-        # Cache prüfen
-        try:
-            with open(FX_CACHE_PATH, "r", encoding="utf-8") as f:
-                cache = json.load(f)
-                ts = datetime.fromisoformat(cache["timestamp"])
-                if datetime.now() - ts < timedelta(hours=48):
-                    print("Wechselkurse aus Cache geladen.\n")
-                    return cache["rates"]
-        except (FileNotFoundError, json.JSONDecodeError, KeyError):
-            pass  # Kein Cache oder unbrauchbar
-
-        # Neue Kurse abrufen
-        print("Lade tagesaktuelle Wechselkurse von open.er-api.com ...")
-        r = requests.get(API_URL, timeout=5)
-        data = r.json()
-        if "rates" not in data:
-            raise ValueError("Ungültige API-Antwort")
-
-        rates = {
-            cur: round(1 / data["rates"][cur], 4) if cur != "CHF" else 1.0
-            for cur in CURRENCIES
-            if cur in data["rates"]
-        }
-
-        # Speichern im Cache
-        with open(FX_CACHE_PATH, "w", encoding="utf-8") as f:
-            json.dump(
-                {"timestamp": datetime.now().isoformat(), "rates": rates},
-                f,
-                ensure_ascii=False,
-                indent=2,
-            )
-
-        print("Wechselkurse erfolgreich aktualisiert.\n")
-        return rates
-
-    except Exception as e:
-        print(f"⚠️ API-Fehler: {e} – Verwende Default-Kurse.\n")
-        return {"EUR": 0.95, "USD": 0.88, "GBP": 0.77, "CHF": 1.0}
-
-
-# Tagesaktuelle oder gecachte Kurse laden
-FX_RATES = load_fx_rates()
-
-
-# ----------------------------
-# 5. Preise in CHF konvertieren
-# ----------------------------
+FX_RATES = {"EUR": 0.95, "USD": 0.88, "GBP": 0.77, "CHF": 1.0}
 
 
 def convert_to_chf(row) -> float:
     """Konvertiert Preis (inkl. Versand) in CHF.
-    Nutzt tagesaktuelle FX_RATES, Fallback bei Fehlwerten."""
+    Gibt 0.00 zurück, wenn kein Produktpreis vorhanden ist.
+    """
     rate = FX_RATES.get(row["waehrung"], 1.0)
 
+    # Kein Produktpreis → kein Gesamtpreis
     if not isinstance(row["preis_wert"], (int, float)) or row["preis_wert"] == 0.0:
         return 0.00
 
+    # Versandkosten sicherstellen
     versand = (
         row["versand_wert"] if isinstance(row["versand_wert"], (int, float)) else 0.0
     )
+
     total = row["preis_wert"] + versand
     return round(total / rate, 2)
 
@@ -208,14 +151,14 @@ def convert_to_chf(row) -> float:
 # Neue Spalte mit Gesamtpreis in CHF
 df["preis_total_chf"] = df.apply(convert_to_chf, axis=1)
 
-print("Preise erfolgreich in CHF umgerechnet (API/Cache-Kurse verwendet).\n")
+print("Preise erfolgreich in CHF umgerechnet.\n")
 
 df["preis_total_chf"] = df["preis_total_chf"].round(2)
 df["preis_wert"] = df["preis_wert"].round(2)
 df["versand_wert"] = df["versand_wert"].round(2)
 
 # ----------------------------
-# 6. Länderbezeichnungen bereinigen
+# 5. Länderbezeichnungen bereinigen
 # ----------------------------
 
 # Mapping-Tabelle: unklare oder gemischte Herkunftsangaben → einheitliche Ländernamen
@@ -247,7 +190,7 @@ df["land"] = df["land"].apply(clean_country)
 print("Länderbezeichnungen bereinigt.\n")
 
 # ----------------------------
-# 7. Produktstatus vereinheitlichen
+# 6. Produktstatus vereinheitlichen
 # ----------------------------
 
 
@@ -268,14 +211,14 @@ def normalize_condition(text: str) -> str:
 df["zustand"] = df["aktualitaet"].apply(normalize_condition)
 
 # ----------------------------
-# 8. Doppelte Einträge entfernen
+# 7. Doppelte Einträge entfernen
 # ----------------------------
 
 df.drop_duplicates(subset=["titel", "preis_total_chf", "link"], inplace=True)
 print("Doppelte Einträge entfernt.\n")
 
 # ----------------------------
-# 9. Finale Struktur & Export
+# 8. Finale Struktur & Export
 # ----------------------------
 
 clean_df = df[

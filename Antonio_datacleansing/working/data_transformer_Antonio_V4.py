@@ -133,7 +133,7 @@ print("Preise und Versandfelder (vektorisiert) extrahiert.\n")
 # ----------------------------
 
 FX_CACHE_PATH = "Antonio_datacleansing/fx_cache.json"
-API_URL = "https://open.er-api.com/v6/latest/CHF"
+API_URL = "https://api.exchangerate.host/latest?base=CHF"
 CURRENCIES = ["EUR", "USD", "GBP", "CHF"]
 
 
@@ -152,7 +152,7 @@ def load_fx_rates():
             pass  # Kein Cache oder unbrauchbar
 
         # Neue Kurse abrufen
-        print("Lade tagesaktuelle Wechselkurse von open.er-api.com ...")
+        print("Lade tagesaktuelle Wechselkurse von exchangerate.host ...")
         r = requests.get(API_URL, timeout=5)
         data = r.json()
         if "rates" not in data:
