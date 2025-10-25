@@ -4,9 +4,11 @@ from pathlib import Path
 
 # from typing import List, Dict, Any
 
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 
-# from scraper import scrape_data
+from scraper import scrape_data
+
+import scraper2
 
 # -----------------------------------------------------------------------------
 # Flask-App
@@ -111,19 +113,25 @@ def submit():
     preis = request.form.get("preis", "").strip()
     region = request.form.get("region", "").strip()
 
+    print("Das ist das eingegebene Produkt: ", produkt)
+
     # Formular-Daten auslesen
-    form_data = request.form  # <--- werkzeug.datastructures.ImmutableMultiDict
+    # form_data = request.form  # <--- werkzeug.datastructures.ImmutableMultiDict
 
     # In ein normales Dictionary umwandeln
-    data_dict = form_data.to_dict()
+    # data_dict = form_data.to_dict()
 
     # Optional: Werte umwandeln oder prüfen
-    data_dict["preis"] = int(data_dict["preis"]) if "preis" in data_dict else None
+    # data_dict["preis"] = int(data_dict["preis"]) if "preis" in data_dict else None
 
     # Übergabe an scraper.py
-    # result = scrape_data(form_data)
+    result = scrape_data(produkt)
 
-    print(data_dict)
+    ergebnis = scraper2.main(produkt)
+
+    print(ergebnis)
+
+    # print(data_dict)
     # Beispielausgabe: {'produkt': 'Apfel', 'preis': 2, 'region': 'Zürich'}
 
     # return jsonify({"empfangen": data_dict})

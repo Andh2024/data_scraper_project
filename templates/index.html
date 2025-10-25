@@ -22,7 +22,7 @@
 
                 <form method="POST" action="{{ url_for('submit') }}" class="vstack gap-3">
 
-                    <!-- Produkt -->
+                    <!-- Produkt
                     <div>
                         <label for="produkt" class="form-label">Produkt</label>
                         <select id="produkt" name="produkt" class="form-select" required>
@@ -34,8 +34,14 @@
                             <option value="https://www.ebay.ch/b/Computer-Tablets-Netzwerk/58058/bn_1845234">Notebooks
                                 generell</option>
                         </select>
-                    </div>
+                    </div>  -->
 
+                     <!-- Produkt -->
+                    <div>
+                        <label for="produkt" class="form-label">Produkt</label>
+                        <input type="text" id="produkt" name="produkt" class="form-control" placeholder="z. B. Notebook"
+                            required>
+                    </div> 
                     <!-- Preis -->
                     <div>
                         <label for="preis" class="form-label">Preis</label>
