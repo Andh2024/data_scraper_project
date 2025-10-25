@@ -10,8 +10,9 @@ from scraper import scrape_data
 
 import scraper2
 
+
 # -----------------------------------------------------------------------------
-# Flask-App
+# Flask-App by Andi und Fabio
 # -----------------------------------------------------------------------------
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")
