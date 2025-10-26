@@ -371,6 +371,22 @@ def transform(input_path: Path, output_path: Path) -> None:
     if rename_map:
         out = out.rename(columns=rename_map)
 
+    # 10c) Duplikate entfernen (Schlüssel: title + price + link)
+    # - NOCH KEINE Titelnormalisierung: exakte (case-sensitive) Vergleiche
+    # - wenn keine 'link'-Spalte existiert, nimm die erste erkannte URL-Spalte (sollte passen, so lange Bild URL nach Haupt URL kommt)
+    dedupe_keys = ["title", "price"]
+
+    link_col = "link" if "link" in out.columns else find_first_url_column(out)
+    if link_col and link_col not in dedupe_keys:
+        dedupe_keys.append(link_col)
+
+    before = len(out)
+    out = out.drop_duplicates(subset=dedupe_keys, keep="first").reset_index(drop=True)
+    removed = before - len(out)
+    print(
+        f"ℹ️  Duplikate entfernt: {removed} (Schlüssel: {dedupe_keys})", file=sys.stderr
+    )
+
     # 11) Schreiben
     out.to_csv(output_path, index=False)
     print(f"✅ Fertig: {output_path}")
