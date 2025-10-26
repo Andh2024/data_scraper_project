@@ -63,7 +63,9 @@ NEXT_SELECTOR = ".pagination__next, a[rel='next'], a[aria-label='Weiter']"
 # =========================
 # Konfiguration
 # =========================
-START_URL = "https://www.ebay.ch/sch/119544/i.html?_nkw=gitarre&_from=R40&_ipg=240"
+START_URL = (
+    "https://www.ebay.ch/sch/i.html?_nkw=gitarre&_sacat=0&_from=R40&_trksid=m570.l1313"
+)
 OUT_CSV = "scraping_output.csv"
 MAX_PAGES = 2
 HEADLESS = False  # gilt nur für Chrome-Start; Safari ignoriert dieses Flag
