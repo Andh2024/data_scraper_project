@@ -48,6 +48,37 @@ from urllib.parse import urlsplit, parse_qs, unquote
 import re
 import sys
 import pandas as pd
+import argparse
+
+
+# Parser-Funktion
+def parse_cli_args(script_dir: Path) -> tuple[Path, Path]:
+    """
+    CLI-Argumente parsen und Defaultpfade setzen:
+    - Default-Input:  <project_root>/scraping_output.csv
+    - Default-Output: <project_root>/output_clean.csv
+    """
+    parser = argparse.ArgumentParser(
+        description="Daten-Transformer für Pricehunter (CSV -> CSV)"
+    )
+    parser.add_argument(
+        "-i",
+        "--input",
+        type=Path,
+        help="Pfad zur Eingabedatei (CSV). Wenn leer, wird <project_root>/scraping_output.csv verwendet.",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        help="Pfad zur Ausgabedatei (CSV). Wenn leer, wird <project_root>/output_clean.csv verwendet.",
+    )
+    args = parser.parse_args()
+
+    project_root = script_dir.parent
+    input_path = args.input or (project_root / "scraping_output.csv")
+    output_path = args.output or (project_root / "output_clean.csv")
+    return input_path, output_path
 
 
 # Hilfefunktion zum harten Abbrechen bei fehlenden Pflichtfeldern
@@ -396,15 +427,11 @@ def transform(input_path: Path, output_path: Path) -> None:
 def main() -> None:
     """
     Bestimmt Ein- und Ausgabepfade:
-    - 'scraping_output.csv' liegt im Projekt-Root (eine Ebene über 'datacleansing')
-    - Ausgabe 'output_clean.csv' wird im selben Ordner gespeichert
+    - Standard: 'scraping_output.csv' und 'output_clean.csv' im Projekt-Root
+    - Kann per CLI-Argumenten überschrieben werden (-i/--input, -o/--output)
     """
     script_dir = Path(__file__).resolve().parent
-    project_root = script_dir.parent  # eine Ebene höher
-
-    # Pfade setzen
-    input_path = project_root / "scraping_output.csv"
-    output_path = project_root / "output_clean.csv"
+    input_path, output_path = parse_cli_args(script_dir)
 
     if not input_path.exists():
         print(f"❌ Eingabedatei nicht gefunden: {input_path}", file=sys.stderr)
