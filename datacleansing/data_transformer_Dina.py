@@ -50,6 +50,13 @@ import sys
 import pandas as pd
 
 
+# Hilfefunktion zum harten Abbrechen bei fehlenden Pflichtfeldern
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        print(f"❌ {message}", file=sys.stderr)
+        sys.exit(1)
+
+
 # ----------------------------- Definition Funktionen ----------------------------- #
 
 
@@ -216,7 +223,7 @@ def transform(input_path: Path, output_path: Path) -> None:
 
     out = df.copy()
 
-    # 2) Spalten ermitteln (tolerant gegenüber Varianten)
+    # 2a) Spalten ermitteln (tolerant gegenüber Varianten)
     col_title = find_col(out, ["Titel", "title", "Title"])
     col_state = find_col(out, ["Zustand", "zustand", "Condition", "condition"])
     col_price = find_col(out, ["Preis", "preis", "Price", "price"])
@@ -234,6 +241,32 @@ def transform(input_path: Path, output_path: Path) -> None:
             "shipping",
         ],
     )
+
+    # 2b) Pflichtfelder prüfen (price + product_name aus URL)
+    # 2b-1) Preisspalte muss existieren
+    require(
+        col_price is not None,
+        "Pflichtfeld fehlt: Keine Preisspalte gefunden (erlaubte Namen: Preis/price/Price).",
+    )
+
+    # 2b-2) Es muss eine URL-Spalte geben, aus der wir product_name extrahieren können
+    url_col_required = find_first_url_column(out)
+    require(
+        url_col_required is not None,
+        "Pflichtfeld fehlt: Keine URL-Spalte gefunden (für product_name via 'skw' oder '_skw').",
+    )
+
+    # 2b-3) product_name für jede Zeile extrahieren können
+    prod_name_series_required = out[url_col_required].map(extract_skw_from_url)
+    pn_clean = prod_name_series_required.fillna("").str.strip()
+    missing_pn = pn_clean == ""
+    require(
+        missing_pn.sum() == 0,
+        f"Pflichtfeld 'product_name' fehlt in {missing_pn.sum()} Zeilen (Parameter 'skw' oder '_skw' nicht vorhanden).",
+    )
+
+    # Merken, damit wir es unten wiederverwenden und nicht doppelt berechnen
+    _precomputed_product_name = prod_name_series_required
 
     # 3) title
     if col_title:
@@ -265,17 +298,25 @@ def transform(input_path: Path, output_path: Path) -> None:
         out["product_origin"] = ""
 
     # 6) Preis -> price + currency
-    if col_price:
-        price_text = out[col_price].astype(str)
-        price_num = price_text.map(parse_number_eu)
-        curr_series = price_text.map(extract_currency)
+    # (Spalte existiert garantiert wegen Pflichtfeld-Check oben)
+    price_text = out[col_price].astype(str)
+    price_num = price_text.map(parse_number_eu)
+    curr_series = price_text.map(extract_currency)
 
-        out["price"] = price_num
-        out["currency"] = curr_series
-        out.drop(columns=[col_price], inplace=True)
-    else:
-        out["price"] = pd.NA
-        out["currency"] = pd.NA
+    # Pflicht: Alle Preise müssen parsebar sein
+    missing_price = pd.Series(price_num).isna()
+    require(
+        missing_price.sum() == 0,
+        f"Pflichtfeld 'price' ist in {missing_price.sum()} Zeilen nicht parsebar.",
+    )
+
+    # price numerisch (du wolltest 0.0 reichen lassen, aber da jetzt Pflicht: keine Füllung nötig)
+    out["price"] = pd.Series(price_num, dtype="float64")
+
+    # currency
+    out["currency"] = curr_series
+
+    out.drop(columns=[col_price], inplace=True)
 
     # 7) Versandkosten -> shipping_cost + price_with_shipping
     shipping_numeric = None
@@ -287,36 +328,23 @@ def transform(input_path: Path, output_path: Path) -> None:
         out["currency"] = out["currency"].fillna(ship_currency)
 
         shipping_numeric = ship_text.map(parse_number_eu)
-        out["shipping_cost"] = shipping_numeric.where(
-            shipping_numeric.notna(), other="keine Angabe"
-        )
+        out["shipping_cost"] = pd.Series(shipping_numeric, dtype="float64").fillna(0.0)
 
-        # price_with_shipping (nur wenn beide Zahlen vorhanden)
-        def combine(p, s):
-            if pd.notna(p) and pd.notna(s):
-                return float(p) + float(s)
-            return "keine Angabe"
-
-        out["price_with_shipping"] = [
-            combine(out["price"].iat[i], shipping_numeric.iat[i])
-            for i in range(len(out))
-        ]
+        # price_with_shipping (Total berechnen)
+        out["price_with_shipping"] = out["price"].astype(float).fillna(0.0) + out[
+            "shipping_cost"
+        ].astype(float).fillna(0.0)
 
         out.drop(columns=[col_ship], inplace=True)
     else:
-        out["shipping_cost"] = "keine Angabe"
-        out["price_with_shipping"] = "keine Angabe"
+        out["shipping_cost"] = 0.0
+        out["price_with_shipping"] = out["price"].astype(float)
 
     # 8) currency: verbleibende Nullen -> 'keine Angabe'
     out["currency"] = out["currency"].fillna("keine Angabe")
 
-    # 9) product_name: aus erster URL-Spalte skw/_skw extrahieren
-    url_col = find_first_url_column(out)
-    if url_col:
-        prod_name = out[url_col].map(extract_skw_from_url)
-        out["product_name"] = prod_name.fillna("keine Angabe")
-    else:
-        out["product_name"] = "keine Angabe"
+    # 9) product_name: aus erster URL-Spalte skw/_skw (bereits geprüft & berechnet)
+    out["product_name"] = _precomputed_product_name
 
     # 10a) Spaltenreihenfolge harmonisieren (falls vorhanden)
     desired_order = [
