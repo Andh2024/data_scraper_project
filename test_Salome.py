@@ -10,6 +10,7 @@ import logging
 
 from flask import Flask, render_template, request, redirect, url_for, session
 
+from datacleansing.data_transformer_Dina import test
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -72,6 +73,9 @@ def load_rows_for_table():
     if not CSV_DATA_PATH.exists() or CSV_DATA_PATH.stat().st_size == 0:
         return []
     rows = []
+
+    # todo: transform
+    test()
     with CSV_DATA_PATH.open("r", newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for r in reader:
@@ -95,7 +99,7 @@ def load_rows_for_table():
 BASE_URL = (
     "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313"
 )
-MAX_PAGES = 10
+MAX_PAGES = 2
 HEADLESS = False  # nur für Chrome relevant
 
 RESULTS_CONTAINER_SELECTOR = (

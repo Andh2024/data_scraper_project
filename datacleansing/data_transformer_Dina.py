@@ -76,7 +76,7 @@ def parse_cli_args(script_dir: Path) -> tuple[Path, Path]:
     args = parser.parse_args()
 
     project_root = script_dir.parent
-    input_path = args.input or (project_root / "scraping_output.csv")
+    input_path = args.input or (project_root / "data_output.csv")
     output_path = args.output or (project_root / "output_clean.csv")
     return input_path, output_path
 
@@ -423,13 +423,7 @@ def transform(input_path: Path, output_path: Path) -> None:
     print(f"✅ Fertig: {output_path}")
 
 
-# Startpunkt des Skripts
-def main() -> None:
-    """
-    Bestimmt Ein- und Ausgabepfade:
-    - Standard: 'scraping_output.csv' und 'output_clean.csv' im Projekt-Root
-    - Kann per CLI-Argumenten überschrieben werden (-i/--input, -o/--output)
-    """
+def cleanup():
     script_dir = Path(__file__).resolve().parent
     input_path, output_path = parse_cli_args(script_dir)
 
@@ -440,5 +434,22 @@ def main() -> None:
     transform(input_path, output_path)
 
 
-if __name__ == "__main__":
-    main()
+# Startpunkt des Skripts
+# def main() -> None:
+#    """
+#    Bestimmt Ein- und Ausgabepfade:
+#    - Standard: 'scraping_output.csv' und 'output_clean.csv' im Projekt-Root
+#    - Kann per CLI-Argumenten überschrieben werden (-i/--input, -o/--output)
+#    """
+#    script_dir = Path(__file__).resolve().parent
+#    input_path, output_path = parse_cli_args(script_dir)
+#
+#    if not input_path.exists():
+#        print(f"❌ Eingabedatei nicht gefunden: {input_path}", file=sys.stderr)
+#        sys.exit(1)
+#
+#    transform(input_path, output_path)
+
+
+# if __name__ == "__main__":
+#    main()
