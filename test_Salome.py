@@ -95,7 +95,7 @@ def load_rows_for_table():
 BASE_URL = (
     "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313"
 )
-MAX_PAGES = 10
+MAX_PAGES = 2
 HEADLESS = False  # nur für Chrome relevant
 
 RESULTS_CONTAINER_SELECTOR = (
