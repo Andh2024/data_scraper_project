@@ -96,9 +96,7 @@ def load_rows_for_table():
 # =============================================================================
 # Scraper-Konfiguration & Selektoren
 # =============================================================================
-BASE_URL = (
-    "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313"
-)
+BASE_URL = "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313&_udhi={}"
 MAX_PAGES = 1
 HEADLESS = False  # nur für Chrome relevant
 
@@ -453,9 +451,10 @@ def save_to_csv(items: List[Dict], filename: Path) -> None:
     logger.info("CSV gespeichert: %s  (%d Zeilen)", filename, len(items))
 
 
-def run_scrape(query: str) -> List[Dict]:
+def run_scrape(query: str, preis: str) -> List[Dict]:
+    preis_clean = "".join(ch for ch in str(preis) if ch.isdigit()) or ""
     """Öffentliche Funktion: Scrapen für einen Suchbegriff und CSV speichern."""
-    start_url = BASE_URL.format(query)
+    start_url = BASE_URL.format(query, preis_clean)
     driver = setup_driver()
     try:
         rows = scrape_all(driver, start_url, max_pages=MAX_PAGES)
@@ -512,7 +511,7 @@ def submit():
     append_row(produkt_url=produkt, preis=preis, region=region)
 
     # Scraper starten
-    items = run_scrape(query=produkt)
+    items = run_scrape(query=produkt, preis=preis)
 
     # Kurzinfo für UI
     session["new_row"] = {

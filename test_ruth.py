@@ -10,6 +10,7 @@ import logging
 
 from flask import Flask, render_template, request, redirect, url_for, session
 
+from datacleansing.data_transformer_Dina import cleanup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -32,6 +33,7 @@ CSV_FIELDS = ["Produkt", "Preis", "Region", "Link"]
 
 # ===== Output Daten (Scraper) =====
 CSV_DATA_PATH = BASE_DIR / "data_output.csv"
+CLEANED_DATA_PATH = BASE_DIR / "output_clean.csv"
 CSV_DATA_FIELDS = ["titel", "aktualitaet", "preis", "land", "versand", "link", "image"]
 
 # =============================================================================
@@ -62,29 +64,30 @@ def append_row(produkt_url: str, preis: str, region: str) -> None:
                 "Produkt": (produkt_url or "").strip(),
                 "Preis": str(preis or "").strip(),
                 "Region": (region or "").strip(),
-                "Link": "",
+                "Link": "",  # aktuell kein separater Link hier
             }
         )
 
 
 def load_rows_for_table():
-    """Liest die Scraper-CSV und liefert Zeilen fürs Template."""
-    if not CSV_DATA_PATH.exists() or CSV_DATA_PATH.stat().st_size == 0:
+    """Liest die bereinigte CSV und liefert Zeilen fürs Template."""
+    if not CLEANED_DATA_PATH.exists() or CLEANED_DATA_PATH.stat().st_size == 0:
         return []
-    rows = []
 
-    with CSV_DATA_PATH.open("r", newline="", encoding="utf-8") as f:
+    rows = []
+    with CLEANED_DATA_PATH.open("r", newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for r in reader:
             rows.append(
                 {
-                    "produkt": (r.get("titel") or "").strip(),
-                    "preis": (r.get("preis") or "").strip(),
-                    "region": (r.get("land") or "").strip(),
+                    "produkt": (r.get("title") or "").strip(),
+                    "preis": (r.get("price") or "").strip(),
+                    "region": (r.get("product_origin") or "").strip(),
                     "link": (r.get("link") or "").strip(),
                     "image": (r.get("image") or "").strip(),
-                    "aktualitaet": (r.get("aktualitaet") or "").strip(),
-                    "versand": (r.get("versand") or "").strip(),
+                    "aktualitaet": (r.get("product_condition") or "").strip(),
+                    "versand": (r.get("shipping_cost") or "").strip(),
+                    "währung": (r.get("currency") or "").strip(),
                 }
             )
     return rows
@@ -93,11 +96,9 @@ def load_rows_for_table():
 # =============================================================================
 # Scraper-Konfiguration & Selektoren
 # =============================================================================
-# ❗ URL erhält jetzt _udhi als zweiten Format-Parameter
 BASE_URL = "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313&_udhi={}"
-
-MAX_PAGES = 2
-HEADLESS = False
+MAX_PAGES = 1
+HEADLESS = False  # nur für Chrome relevant
 
 RESULTS_CONTAINER_SELECTOR = (
     ".srp-river-main, ul.srp-results, .srp-results, .s-card__grid, .srp-list"
@@ -154,6 +155,10 @@ BAD_TITLE_SUBSTRINGS = [
 # WebDriver-Setup
 # =============================================================================
 def setup_driver(headless: bool = HEADLESS) -> WebDriver:
+    """
+    Windows (nt): Chrome (webdriver-manager)
+    POSIX (macOS/Linux): Safari (wenn möglich), sonst Chrome (Fallback)
+    """
     if os.name == "nt":
         logger.info("OS: Windows -> Chrome WebDriver")
         return _start_chrome(headless)
@@ -200,6 +205,7 @@ def _start_safari() -> WebDriver:
 # Scraper-Helfer
 # =============================================================================
 def accept_cookies(driver: WebDriver) -> None:
+    """Versucht, Cookie-Banner (inkl. iframe) zu akzeptieren."""
     try:
         time.sleep(2)
         for btn in driver.find_elements(By.TAG_NAME, "button"):
@@ -216,6 +222,7 @@ def accept_cookies(driver: WebDriver) -> None:
                 except WebDriverException:
                     pass
 
+        # iframe-Fallback
         for frame in driver.find_elements(By.TAG_NAME, "iframe"):
             try:
                 driver.switch_to.frame(frame)
@@ -333,6 +340,7 @@ def _parse_src_value(val: str) -> str:
 
 
 def _extract_image_url(img_el) -> str:
+    """Bestmögliche Bild-URL aus einem <img>-Element."""
     if img_el is None:
         return ""
     src = img_el.get("src")
@@ -421,7 +429,6 @@ def scrape_all(
             logger.warning(
                 "Keine Angebote geparst. Prüfe debug_page1.html und Selektoren."
             )
-
         all_rows.extend(page_rows)
 
         soup = BeautifulSoup(html, "html.parser")
@@ -444,14 +451,22 @@ def save_to_csv(items: List[Dict], filename: Path) -> None:
     logger.info("CSV gespeichert: %s  (%d Zeilen)", filename, len(items))
 
 
-# ❗ run_scrape erhält jetzt den Preisparameter
 def run_scrape(query: str, preis: str) -> List[Dict]:
     preis_clean = "".join(ch for ch in str(preis) if ch.isdigit()) or ""
+    """Öffentliche Funktion: Scrapen für einen Suchbegriff und CSV speichern."""
     start_url = BASE_URL.format(query, preis_clean)
     driver = setup_driver()
     try:
         rows = scrape_all(driver, start_url, max_pages=MAX_PAGES)
         save_to_csv(rows, CSV_DATA_PATH)
+
+        # ⬇️ generate output_clean.csv from data_output.csv
+        try:
+            cleanup()
+            logger.info("Cleaned file generated: %s", CLEANED_DATA_PATH)
+        except Exception as e:
+            logger.exception("Cleaning failed: %s", e)
+
         return rows
     finally:
         try:
@@ -465,6 +480,7 @@ def run_scrape(query: str, preis: str) -> List[Dict]:
 # =============================================================================
 @app.template_filter("chf")
 def chf_filter(value):
+    """Formatiert Zahlen als Schweizer Franken, z. B. CHF 9'000."""
     try:
         digits = "".join(ch for ch in str(value) if ch.isdigit())
         if not digits:
@@ -481,6 +497,7 @@ def chf_filter(value):
 # =============================================================================
 @app.route("/")
 def home():
+    # Erwartet: templates/index.html
     return render_template("index.html", active_page="home")
 
 
@@ -490,11 +507,13 @@ def submit():
     preis = request.form.get("preis", "").strip()
     region = request.form.get("region", "").strip()
 
+    # Eingaben-Log (optional)
     append_row(produkt_url=produkt, preis=preis, region=region)
 
-    # ❗ Preis wird hier an Scraper übergeben
+    # Scraper starten
     items = run_scrape(query=produkt, preis=preis)
 
+    # Kurzinfo für UI
     session["new_row"] = {
         "produkt": produkt,
         "preis": preis,
@@ -507,7 +526,8 @@ def submit():
 
 @app.route("/suchresultat/aktuell")
 def suchresultat_aktuell():
-    new_row = session.pop("new_row", None)
+    """Zeigt nur den zuletzt gespeicherten Eintrag + Erfolgsmeldung."""
+    new_row = session.pop("new_row", None)  # einmalig anzeigen
     scraped_count = session.pop("scraped_count", None)
     if not new_row:
         return redirect(url_for("suchresultat_total"))
@@ -522,6 +542,7 @@ def suchresultat_aktuell():
 
 @app.route("/suchresultat")
 def suchresultat_total():
+    """Alle gespeicherten Scraper-Einträge anzeigen."""
     daten = load_rows_for_table()
     return render_template(
         "suchresultat_total.html",
@@ -534,6 +555,7 @@ def suchresultat_total():
 # Main
 # =============================================================================
 if __name__ == "__main__":
+    # Header anlegen, falls Dateien fehlen
     ensure_csv_with_header(CSV_PATH, CSV_FIELDS)
     ensure_csv_with_header(CSV_DATA_PATH, CSV_DATA_FIELDS)
     app.run(debug=True)
