@@ -72,6 +72,7 @@ def load_rows_for_table():
     if not CSV_DATA_PATH.exists() or CSV_DATA_PATH.stat().st_size == 0:
         return []
     rows = []
+
     with CSV_DATA_PATH.open("r", newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for r in reader:
