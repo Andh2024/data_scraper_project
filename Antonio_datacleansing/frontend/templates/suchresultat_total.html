@@ -2,7 +2,6 @@
 {% block title %}Suchresultat – Price Hunter{% endblock %}
 {% block content %}
 
-
 <div class="container-sm">
     <br>
     <h2 class="text-center mb-4">Suchresultat</h2>
@@ -12,16 +11,15 @@
             <thead class="table-secondary text-dark">
                 <tr>
                     <th>Produkt</th>
-                    <!-- 1) Preis linksbündig + 2) Extra Abstand nach rechts -->
                     <th class="text-start pe-4">Preis</th>
                     <th>Region</th>
-                    <!-- 3) Link rechtsbündig wie die Buttons -->
                     <th class="text-end" style="padding-right: 70px; min-width: 110px;">Link</th>
                 </tr>
             </thead>
             <tbody>
                 {% for zeile in daten %}
                 <tr>
+                    <!-- Produkt -->
                     <td class="text-truncate" style="max-width: 420px;">
                         <a href="{{ zeile.link }}" class="link-body-emphasis text-decoration-none" target="_blank"
                             rel="noopener" title="{{ zeile.produkt }}">
@@ -29,14 +27,22 @@
                         </a>
                     </td>
 
-                    <!-- 1) Preis links + 2) Extra Abstand rechts -->
-                    <td class="text-start pe-4">{{ zeile.preis }} CHF</td>
+                    <!-- Preis + dynamische Währung -->
+                    <td class="text-start pe-4">
+                        {{ zeile.preis }}
+                        {% if zeile.währung %}
+                        {{ zeile.währung }}
+                        {% elif zeile.currency %}
+                        {{ zeile.currency }}
+                        {% endif %}
+                    </td>
 
+                    <!-- Region -->
                     <td>
                         <span class="badge text-bg-secondary">{{ zeile.region }}</span>
                     </td>
 
-                    <!-- 3) Buttons rechtsbündig -->
+                    <!-- Link -->
                     <td class="text-end">
                         {% if zeile.link %}
                         <a href="{{ zeile.link }}" class="btn btn-sm btn-primary" style="min-width:96px;"
@@ -53,4 +59,5 @@
         </table>
     </div>
 </div>
+
 {% endblock %}
