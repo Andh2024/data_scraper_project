@@ -14,5 +14,10 @@
         "source.organizeImports": "explicit"
     },
     // --- Optional: Einfacher Type Check ---
-    "python.analysis.typeCheckingMode": "basic"
+    "python.analysis.typeCheckingMode": "basic",
+    "python.testing.pytestArgs": [
+        "."
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 }
