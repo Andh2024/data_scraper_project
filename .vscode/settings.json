@@ -1,14 +1,18 @@
 {
+    // Pfad zur virtuellen Umgebung (korrekt)
     "python.defaultInterpreterPath": "C:\\Users\\JumpStart\\Documents\\GitHub\\pricehunter\\.venv\\Scripts\\python.exe",
+    // --- Linter (Flake8) ---
     "python.linting.enabled": true,
     "python.linting.flake8Enabled": true,
-    "python.linting.pylintEnabled": false,
-    "python.linting.lintOnSave": true,
-    "editor.formatOnSave": false,
+    // --- Automatische Formatierung (Black) ---
+    "editor.formatOnSave": true,
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter"
     },
+    // --- Code Actions & Import Sortierung ---
     "editor.codeActionsOnSave": {
-        "source.fixAll": "never"
-    }
+        "source.organizeImports": "explicit"
+    },
+    // --- Optional: Einfacher Type Check ---
+    "python.analysis.typeCheckingMode": "basic"
 }
