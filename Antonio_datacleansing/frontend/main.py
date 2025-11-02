@@ -10,7 +10,7 @@ import logging
 
 from flask import Flask, render_template, request, redirect, url_for, session
 
-from datacleansing_toni.data_transformer_Dina import cleanup
+from data_transformer_cleansing import cleanup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
