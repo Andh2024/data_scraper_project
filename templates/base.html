@@ -58,6 +58,18 @@
             z-index: 3;
             background-color: var(--bs-secondary-bg);
         }
+
+        /* Gilt nur im Dark Mode */
+        [data-bs-theme="dark"] .table-secondary th {
+            color: #fff !important;
+            /* weisse Schrift */
+            background-color: #2c2c2c !important;
+            /* optional dunkler Hintergrund */
+        }
+
+        [data-bs-theme="dark"] .table-secondary {
+            color: #fff !important;
+        }
     </style>
 </head>
 
