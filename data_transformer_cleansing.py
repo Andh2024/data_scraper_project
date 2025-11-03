@@ -55,8 +55,8 @@ import argparse
 def parse_cli_args(script_dir: Path) -> tuple[Path, Path]:
     """
     CLI-Argumente parsen und Defaultpfade setzen:
-    - Default-Input:  <project_root>/scraping_output.csv
-    - Default-Output: <project_root>/output_clean.csv
+    - Default-Input:  <script_dir>/data_output.csv
+    - Default-Output: <script_dir>/output_clean.csv
     """
     parser = argparse.ArgumentParser(
         description="Daten-Transformer für Pricehunter (CSV -> CSV)"
@@ -65,17 +65,19 @@ def parse_cli_args(script_dir: Path) -> tuple[Path, Path]:
         "-i",
         "--input",
         type=Path,
-        help="Pfad zur Eingabedatei (CSV). Wenn leer, wird <project_root>/scraping_output.csv verwendet.",
+        help="Pfad zur Eingabedatei (CSV). Wenn leer, wird <script_dir>/data_output.csv verwendet.",
     )
     parser.add_argument(
         "-o",
         "--output",
         type=Path,
-        help="Pfad zur Ausgabedatei (CSV). Wenn leer, wird <project_root>/output_clean.csv verwendet.",
+        help="Pfad zur Ausgabedatei (CSV). Wenn leer, wird <script_dir>/output_clean.csv verwendet.",
     )
     args = parser.parse_args()
 
-    project_root = script_dir.parent
+    # CSV-Dateien liegen jetzt im gleichen Ordner wie dieses Skript
+    project_root = script_dir
+
     input_path = args.input or (project_root / "data_output.csv")
     output_path = args.output or (project_root / "output_clean.csv")
     return input_path, output_path
