@@ -41,7 +41,7 @@
                             {{ zeile.produkt }}
                         </a>
                     </td>
-                    <td class="text-start pe-4">{{ zeile.preis }} CHF</td>
+                    <td class="text-start pe-4">{{ zeile.preis }} {{ zeile.währung or zeile.currency }}</td>
                     <td><span class="badge text-bg-secondary">{{ zeile.region }}</span></td>
                     <td class="text-end">
                         {% if zeile.link %}
