@@ -1,0 +1,12 @@
+// Ablauf der PriceHunter-App
+digraph {
+	A [label="Benutzer öffnet Web-App"]
+	B [label="Submit Formular"]
+	C [label="Scraper (Selenium + BeautifulSoup)"]
+	D [label="Daten Cleaning (data_transformer_cleansing.py)"]
+	E [label="Output anzeigen (HTML)"]
+	A -> B
+	B -> C
+	C -> D
+	D -> E
+}
