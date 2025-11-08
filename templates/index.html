@@ -2,6 +2,7 @@
 {% block title %}Start – Price Hunter{% endblock %}
 {% block content %}
 
+<!-- Produktsuche Bereich -->
 <section class="text-center mt-5">
     <h1 class="display-6 fw-bold mb-3">Suche Dein Produkt!</h1>
     <p class="text-secondary mb-3">Vergleiche schneller – speichere Suchläufe und sieh alle Resultate auf einen Blick.
@@ -11,7 +12,6 @@
 <div class="row justify-content-center">
     <div class="col-12 col-md-8 col-lg-6 col-xl-5">
         <div class="card shadow-lg rounded-4 border-0">
-            <!-- WICHTIG: card-body sorgt für Innenabstand -->
             <div class="card-body p-4 p-sm-5">
 
                 {% if message %}
@@ -22,7 +22,7 @@
 
                 <form method="POST" action="{{ url_for('submit') }}" class="vstack gap-3">
 
-                    <!-- Produkt -->
+                    <!-- Produktfeld -->
                     <div>
                         <label for="produkt" class="form-label">Produkt</label>
                         <input type="text" id="produkt" name="produkt" class="form-control"
@@ -30,7 +30,7 @@
                         <div class="form-text">Gib einen Produktnamen oder Suchbegriff ein.</div>
                     </div>
 
-                    <!-- Preis -->
+                    <!-- Preisfeld -->
                     <div>
                         <label for="preis" class="form-label">Max. Preis</label>
                         <div class="input-group">
@@ -41,7 +41,7 @@
 
                     </div>
 
-                    <!-- Region -->
+                    <!-- Auskommentiertes Regionfeld -->
                     <!--<div>
                         <label for="region" class="form-label">Land</label>
                         <input type="text" id="region" name="region" class="form-control" placeholder="z. B. Schweiz"
@@ -49,7 +49,9 @@
                     </div>
                     -->
 
+                    <!-- Submit Button für den Start der Produktesuche -->
                     <button type="submit" class="btn btn-dark btn-lg w-100">Produkt suchen</button>
+                    <!-- Button zur Anzeige der bisherigen Suchresultate -->
                     <a href="{{ url_for('suchresultat_total') }}" class="btn btn-outline-secondary w-100">Gespeicherte
                         Resultate anzeigen</a>
                 </form>

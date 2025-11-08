@@ -113,7 +113,7 @@ def load_rows_for_table():
 
 # ----------------------------- Scraper-Konfiguration ----------------------------- #
 BASE_URL = "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313&_udhi={}"  # mit Platzhaltern: {query} und {preis_max}
-MAX_PAGES = 1  # Setienlimit - muss noch angepasst werden
+MAX_PAGES = 1  # Seitenlimit - muss noch angepasst werden
 HEADLESS = False  # nur für Chrome relevant
 
 # ----------------------------- Scraper-Selektoren ----------------------------- #
@@ -609,29 +609,38 @@ def chf_filter(value):
 @app.route("/")
 def home():
     """
-    Startseite erwartet ein Template "templates/index.html"
+    Startseite erwartet das Template "templates/index.html"
     """
-    return render_template("index.html", active_page="home")
+    return render_template(
+        "index.html", active_page="home"
+    )  # Darstellung des Home HTMLs
 
 
 @app.route("/submit", methods=["POST"])
 def submit():
     """
-    Formular-Endpoint: Liest Produkt/Preis/Land, loggt Eingabe,
-    startet Scraper und zeigt danach eine Kurzbestätigung an.
+    Formular-Endpoint: Liest Produkt/Preis/Land, loggt Eingabe, übergibt Produkt und Preis an Scraper Funktion,
+    startet Scraper und zeigt danach die Kurzbestätigung "Produktsuche läuft" an.
     """
-    produkt = request.form.get("produkt", "").strip()
-    preis = request.form.get("preis", "").strip()
-    region = request.form.get("region", "").strip()
+    produkt = request.form.get(
+        "produkt", ""
+    ).strip()  # Holt eingegebenes Produkt aus Frontend Formular und speichert in Variable
+    preis = request.form.get(
+        "preis", ""
+    ).strip()  # Holt eingegebenen Preis aus Frontend Formular und speichert in Variable
+    region = request.form.get(
+        "region", ""
+    ).strip()  # Holt eingegebenes Land/Region aus Frontend Formular (wird aktuell nicht konsumiert) und speichert in Variable
 
-    # Eingaben-Log (optional)
-    append_row(produkt_url=produkt, preis=preis, region=region)
+    append_row(
+        produkt_url=produkt, preis=preis, region=region
+    )  # Eingaben-Log (optional)
 
-    # Scraper starten
-    items = run_scrape(query=produkt, preis=preis)
+    items = run_scrape(
+        query=produkt, preis=preis
+    )  # Scraper Funktion starten inklusive Produkt und Preisübergabe
 
-    # Kurzinfo für UI
-    session["new_row"] = {
+    session["new_row"] = {  # Kurzinfo für UI
         "produkt": produkt,
         "preis": preis,
         "region": region,
@@ -644,9 +653,9 @@ def submit():
 @app.route("/suchresultat/aktuell")
 def suchresultat_aktuell():
     """
-    Zeigt nur den zuletzt gespeicherten Eintrag + Erfolgsmeldung.
+    Darstellung des Verarbeitungsstatus während Scraping und Data Cleaning.
     """
-    new_row = session.pop("new_row", None)  # einmalig anzeigen
+    new_row = session.pop("new_row", None)
     scraped_count = session.pop("scraped_count", None)
     if not new_row:
         return redirect(url_for("suchresultat_total"))

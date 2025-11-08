@@ -2,10 +2,12 @@
 {% block title %}Suchresultat – Price Hunter{% endblock %}
 {% block content %}
 
+<!-- Container für Anzeige der Suchresultate -->
 <div class="container-sm">
     <br>
     <h2 class="text-center mb-4">Suchresultat</h2>
 
+    <!-- Tabelle für strukturierte Darstellung der Suchresultate -->
     <div class="table-responsive results-wrap">
         <table id="resultsTable" class="table table-striped table-hover align-middle js-theme-table table-sticky">
             <thead class="table-secondary text-dark">
@@ -17,7 +19,7 @@
                         Max. Preis <span id="sortSymbol">⬍</span>
                     </th>
 
-                    <!-- Land + integriertes Dropdown -->
+                    <!-- Dropdown für die Länderauswahl -->
                     <th>
                         <div class="d-flex align-items-center gap-2" style="vertical-align: middle;">
                             <span class="fw-semibold" style="margin-top: 3px;">Land</span>
@@ -31,6 +33,7 @@
                     <th class="text-end" style="padding-right: 70px; min-width: 110px;">Link</th>
                 </tr>
             </thead>
+
 
             <tbody>
                 {% for zeile in daten %}
@@ -58,7 +61,7 @@
     </div>
 </div>
 
-<!-- Filter + Sort Script -->
+<!-- Filter- und Sortier-Java Script -->
 <script>
     (function () {
         const table = document.getElementById("resultsTable");
@@ -68,7 +71,6 @@
         const sortSymbol = document.getElementById("sortSymbol");
         let sortAsc = true;
 
-        // ---- 1. Länder automatisch ins Dropdown einfügen ----
         const lands = new Set();
         Array.from(tbody.rows).forEach(tr => {
             const land = tr.cells[2].innerText.trim();
@@ -81,7 +83,6 @@
             filterLand.appendChild(opt);
         });
 
-        // ---- 2. Filter nach Land ----
         filterLand.addEventListener("change", () => {
             const selected = filterLand.value;
             Array.from(tbody.rows).forEach(tr => {
@@ -90,7 +91,6 @@
             });
         });
 
-        // ---- 3. Sortierung nach Preis ----
         sortHeader.addEventListener("click", () => {
             const rows = Array.from(tbody.rows);
             rows.sort((a, b) => {
