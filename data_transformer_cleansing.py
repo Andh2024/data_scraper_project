@@ -439,7 +439,7 @@ def cleanup():
 # def main() -> None:
 #    """
 #    Bestimmt Ein- und Ausgabepfade:
-#    - Standard: 'scraping_output.csv' und 'output_clean.csv' im Projekt-Root
+#    - Standard: 'output_scraper.csv' und 'output_clean.csv' im Projekt-Root
 #    - Kann per CLI-Argumenten überschrieben werden (-i/--input, -o/--output)
 #    """
 #    script_dir = Path(__file__).resolve().parent
