@@ -81,8 +81,10 @@ def append_row(produkt_url: str, preis: str, region: str) -> None:
             {
                 "Produkt": (produkt_url or "").strip(),
                 "Preis": str(preis or "").strip(),
-                "Region": (region or "").strip(),
-                "Link": "",  # aktuell kein separater Link hier
+                "Region": (
+                    region or ""
+                ).strip(),  # aktuell im Frontend keine Eingabe für Region möglich
+                "Link": "",  # aktuell kein separater Link hier - Link wird aufgrund von Suchbegriff {query} und {preis_max} zusammengesetzt / buru: ich würde diese Zeile löschen
             }
         )
 
@@ -114,11 +116,11 @@ def load_rows_for_table():
 # ----------------------------- Scraper-Konfiguration ----------------------------- #
 BASE_URL = "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313&_udhi={}"  # mit Platzhaltern: {query} und {preis_max}
 MAX_PAGES = 1  # Seitenlimit - muss noch angepasst werden
-HEADLESS = False  # nur für Chrome relevant
+HEADLESS = False  # für Chrome relevant (buru: stimmt das?): False = Scraping wird sichtbar im Browser ausgeführt ; True = Scraping läuft unsichtbar im Hintergrund
 
 # ----------------------------- Scraper-Selektoren ----------------------------- #
 """
-Seklektoren (mehrere Varianten, da eBay-Layout variieren kann)
+Seklektoren (mehrere Varianten, da eBay-Layout variieren kann) # buru: könnte man evtl rauslöschen und sich nur auf die aktuell gültigen konzentrieren
 """
 RESULTS_CONTAINER_SELECTOR = (
     ".srp-river-main, ul.srp-results, .srp-results, .s-card__grid, .srp-list"
@@ -159,7 +161,7 @@ TITLE_BAD_PHRASES = [
     "öffnet sich in einem neuen fenster oder tab",
     "opens in a new window or tab",
     "open in a new window or tab",
-]
+]  # buru: könnte man evtl rauslöschen, da _clean_title diese Phrasen entfernt
 BAD_TITLE_SUBSTRINGS = [
     "shop on ebay",
     "shoppen auf ebay",
@@ -168,7 +170,7 @@ BAD_TITLE_SUBSTRINGS = [
     "anzeige",
     "advertisement",
     "ad:",
-]
+]  # buru: könnte man evtl rauslöschen, da diese Filterung auch in parse_items_from_html erfolgt
 
 
 # ----------------------------- WebDriver-Setup ----------------------------- #
@@ -188,7 +190,7 @@ def setup_driver(headless: bool = HEADLESS) -> WebDriver:
     if os.name == "nt":
         logger.info("OS: Windows -> Chrome WebDriver")
         return _start_chrome(headless)
-    elif os.name == "posix":
+    elif os.name == "posix":  # buru: warum ist das matt?
         logger.info("OS: POSIX -> versuche Safari, sonst Chrome")
         try:
             return _start_safari()
@@ -353,7 +355,7 @@ def _clean_title(title: str) -> str:
 
 def _extract_location_and_shipping(card: BeautifulSoup) -> Tuple[str, str]:
     """
-    Extrahiert das Herkunftsland und Vresandzeile aus Attributreihen.
+    Extrahiert das Herkunftsland und Versandzeile aus Attributreihen.
 
     Args:
         card: BeautifulSoup-Knoten eines Angebots.
