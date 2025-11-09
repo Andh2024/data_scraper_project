@@ -42,7 +42,7 @@ CSV_PATH = BASE_DIR / "data.csv"
 CSV_FIELDS = ["Produkt", "Preis", "Region", "Link"]
 
 # Output Daten (Scraper)
-CSV_DATA_PATH = BASE_DIR / "data_output.csv"
+CSV_DATA_PATH = BASE_DIR / "output_scraper.csv"
 CLEANED_DATA_PATH = BASE_DIR / "output_clean.csv"
 CSV_DATA_FIELDS = ["titel", "aktualitaet", "preis", "land", "versand", "link", "image"]
 
@@ -573,7 +573,7 @@ def run_scrape(query: str, preis: str) -> List[Dict]:
         rows = scrape_all(driver, start_url, max_pages=MAX_PAGES)  # Scrape
         save_to_csv(rows, CSV_DATA_PATH)  # Rohdaten sichern
 
-        # Nachbearbeitung: erzeugt output_clean.csv aus data_output.csv
+        # Nachbearbeitung: erzeugt output_clean.csv aus output_scraper.csv
         try:
             cleanup()
             logger.info("Cleaned file generated: %s", CLEANED_DATA_PATH)

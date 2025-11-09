@@ -4,7 +4,7 @@
 """
 Daten-Transformer für Pricehunter
 ---------------------------------
-Liest 'data_output.csv' aus und schreibt die bereinigte Datei als 'output_clean.csv' zurück.
+Liest 'output_scraper.csv' aus und schreibt die bereinigte Datei als 'output_clean.csv' zurück.
 
 Umfang der Transformation:
 - title:
@@ -54,7 +54,7 @@ import argparse
 def parse_cli_args(script_dir: Path) -> tuple[Path, Path]:
     """
     CLI-Argumente parsen und Defaultpfade setzen:
-    - Default-Input:  <script_dir>/data_output.csv
+    - Default-Input:  <script_dir>/output_scraper.csv
     - Default-Output: <script_dir>/output_clean.csv
     """
     parser = argparse.ArgumentParser(
@@ -64,7 +64,7 @@ def parse_cli_args(script_dir: Path) -> tuple[Path, Path]:
         "-i",
         "--input",
         type=Path,
-        help="Pfad zur Eingabedatei (CSV). Wenn leer, wird <script_dir>/data_output.csv verwendet.",
+        help="Pfad zur Eingabedatei (CSV). Wenn leer, wird <script_dir>/output_scraper.csv verwendet.",
     )
     parser.add_argument(
         "-o",
@@ -77,7 +77,7 @@ def parse_cli_args(script_dir: Path) -> tuple[Path, Path]:
     # CSV-Dateien liegen jetzt im gleichen Ordner wie dieses Skript
     project_root = script_dir
 
-    input_path = args.input or (project_root / "data_output.csv")
+    input_path = args.input or (project_root / "output_scraper.csv")
     output_path = args.output or (project_root / "output_clean.csv")
     return input_path, output_path
 
