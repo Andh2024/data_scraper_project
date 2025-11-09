@@ -4,8 +4,7 @@
 """
 Daten-Transformer für Pricehunter
 ---------------------------------
-Liest 'scraping_output.csv' aus dem gleichen Ordner wie dieses Skript
-und schreibt die bereinigte Datei als 'output_clean.csv' zurück.
+Liest 'data_output.csv' aus und schreibt die bereinigte Datei als 'output_clean.csv' zurück.
 
 Umfang der Transformation:
 - title:
@@ -20,7 +19,7 @@ Umfang der Transformation:
     * Neue Spalten: 'price' (float) und 'currency' (z.B. EUR/CHF/USD/GBP).
 - Land:
     * Entfernt führendes 'aus ' -> nur das Land bleibt übrig.
-    * Spaltenname: 'product_origin'.
+    * Neuer Spaltenname: 'product_origin'.
     * Korrigiert fehlerhaft encodiertes 'Großbritannien' (z.B. 'GroÃŸbritannien')
       zu 'Grossbritannien'.
 - Versandkosten:
