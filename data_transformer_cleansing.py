@@ -7,37 +7,39 @@ Daten-Transformer für Pricehunter
 Liest 'output_scraper.csv' aus und schreibt die bereinigte Datei als 'output_clean.csv' zurück.
 
 Umfang der Transformation:
-- title:
+- titel:
     * Spalte 'Titel'/'title' wird in 'title' umbenannt, Werte unverändert.
-- Zustand:
+- aktualitaet:
     * Entfernt ein finales ' |' (falls vorhanden).
     * Leere Werte -> 'keine Angabe'.
-    * Spaltenname: 'product_condition'.
-- Preis:
+    * Neuer Spaltenname: 'product_condition'.
+- preis:
     * Extrahiert numerischen Betrag (EU-Format wird erkannt, z.B. 3.040,06).
     * Währung wird separat als 'currency' ausgewiesen.
     * Neue Spalten: 'price' (float) und 'currency' (z.B. EUR/CHF/USD/GBP).
-- Land:
+- land:
     * Entfernt führendes 'aus ' -> nur das Land bleibt übrig.
     * Neuer Spaltenname: 'product_origin'.
     * Korrigiert fehlerhaft encodiertes 'Großbritannien' (z.B. 'GroÃŸbritannien')
       zu 'Grossbritannien'.
-- Versandkosten:
+- versand:
     * Extrahiert numerischen Betrag analog 'price', ohne '+'/'Versand'/Währung.
     * Neue Spalten:
-        - 'shipping_cost' (float oder 'keine Angabe', wenn nichts da)
+        - 'shipping_cost' (float oder 0.0, wenn nichts da)
         - 'price_with_shipping' (Summe aus 'price' + 'shipping_cost' oder
-          'keine Angabe', falls unvollständig)
-    * Falls 'currency' in 'price' nicht erkennbar ist, wird – falls möglich –
+          0.0, falls unvollständig)
+    * Falls 'currency' in 'price' nicht erkennbar ist, wird (falls möglich)
       die Währung aus den Versandkosten übernommen.
 - product_name:
-    * Aus der *ersten* URL-Spalte den Query-Parameter 'skw' oder '_skw'
+    * Aus der *ersten* URL-Spalte (link) den Query-Parameter 'skw' oder '_skw'
       extrahieren (alles vor 'skw=' sowie alles nach dem nächsten '&' wird
       entfernt). URL-decodiert. Erster Buchstabe wird groß gemacht.
-      Wenn nicht vorhanden -> 'keine Angabe'.
+
 
 Das Skript ist bewusst robust gegenüber leicht unterschiedlichen Spaltennamen
 (z.B. 'Preis'/'price', 'Versand'/'Versandkosten', usw.).
+Zudem wird bei fehlenden Pflichtfeldern (price, product_name) ein harter Abbruch mit
+Fehlermeldung durchgeführt.
 """
 
 from __future__ import annotations
@@ -96,12 +98,15 @@ def require(condition: bool, message: str) -> None:
 def find_col(df: pd.DataFrame, candidates: list[str]) -> str | None:
     """
     Sucht die erste Spalte im DataFrame, deren Name einem der Kandidaten
-    (case-insensitive) entspricht, und gibt den *exakten* Spaltennamen zurück.
+    (case-insensitive, ohne führende/nachgestellte Leerzeichen) entspricht,
+    und gibt den *exakten* Spaltennamen zurück.
     """
-    mapping = {c.lower(): c for c in df.columns}
+    # Spaltennamen trimmen + lowercase zum Vergleichen
+    mapping = {str(c).strip().lower(): c for c in df.columns}
     for cand in candidates:
-        if cand.lower() in mapping:
-            return mapping[cand.lower()]
+        key = str(cand).strip().lower()
+        if key in mapping:
+            return mapping[key]
     return None
 
 
@@ -254,10 +259,14 @@ def transform(input_path: Path, output_path: Path) -> None:
         df = pd.read_csv(input_path, encoding="latin-1")
 
     out = df.copy()
+    out.rename(columns=lambda c: str(c).strip(), inplace=True)
 
     # 2a) Spalten ermitteln (tolerant gegenüber Varianten)
     col_title = find_col(out, ["Titel", "title", "Title"])
-    col_state = find_col(out, ["Zustand", "zustand", "Condition", "condition"])
+    col_state = find_col(
+        out,
+        ["Zustand", "zustand", "Condition", "condition", "aktualitaet", "Aktualitaet"],
+    )
     col_price = find_col(out, ["Preis", "preis", "Price", "price"])
     col_country = find_col(
         out, ["Land", "land", "Country", "country", "Herkunft", "herkunft"]
@@ -315,6 +324,8 @@ def transform(input_path: Path, output_path: Path) -> None:
         cond = cond.str.strip().replace("", "keine Angabe")
         out["product_condition"] = cond
         out.drop(columns=[col_state], inplace=True)
+    if "product_condition" not in out.columns and "aktualitaet" in out.columns:
+        out.rename(columns={"aktualitaet": "product_condition"}, inplace=True)
 
     # 5) Land -> product_origin (+ 'aus ' entfernen + GB-Korrektur)
     if col_country:
@@ -433,24 +444,3 @@ def cleanup():
         sys.exit(1)
 
     transform(input_path, output_path)
-
-
-# Startpunkt des Skripts
-# def main() -> None:
-#    """
-#    Bestimmt Ein- und Ausgabepfade:
-#    - Standard: 'output_scraper.csv' und 'output_clean.csv' im Projekt-Root
-#    - Kann per CLI-Argumenten überschrieben werden (-i/--input, -o/--output)
-#    """
-#    script_dir = Path(__file__).resolve().parent
-#    input_path, output_path = parse_cli_args(script_dir)
-#
-#    if not input_path.exists():
-#        print(f"❌ Eingabedatei nicht gefunden: {input_path}", file=sys.stderr)
-#        sys.exit(1)
-#
-#    transform(input_path, output_path)
-
-
-# if __name__ == "__main__":
-#    main()
