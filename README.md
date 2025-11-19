@@ -1,35 +1,73 @@
-!! Change this document for your own project by removing the placeholder text, adding your own text, adding helpful sections etc. etc. !!
+# PriceHunter – Webbasierte Preisvergleichs-Applikation
 
-# Data Scraper Project Frontend
+**PriceHunter** ist eine Python-basierte Webapplikation, die es ermöglicht, Preise von Produkten auf Online-Marktplätzen (aktuell: eBay Schweiz) zu vergleichen.  
+Die Applikation wurde im Rahmen des Moduls SWEN – Software Engineering im Studiengang Master of Science in Wirtschaftsinformatik entwickelt.
 
-In a few sentences describe what your project is trying to solve.
+Ziel des Projekts war es, die Grundlagen von **Softwareentwicklung, Teamarbeit mit GitHub, Python-Backend-Entwicklung (Flask)** und **Web Scraping mit Selenium & BeautifulSoup** praktisch zu erlernen und anzuwenden.
 
-You can use [GitHub markdown
-notation](https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax)
-or [GitLab markdown notation](https://docs.gitlab.com/ee/user/markdown.html) in
-case you are using one of these platforms. This will give a nicely formatted
-documentation when looking at your project online.
+---
+
+## Funktionen und Zielsetzung
+
+- **Produktsuche:** Nutzer:innen können ein Produkt und einen Maximalpreis eingeben.
+- **Scraping:** Die Applikation ruft automatisiert eBay.ch auf und extrahiert Produktinformationen.
+- **Datenbereinigung:** Rohdaten werden automatisch transformiert und in bereinigter Form gespeichert.
+- **Darstellung:** Ergebnisse werden über ein Flask-Webinterface (Bootstrap-Design, Light-/Dark-Mode) angezeigt.
+- **Datenspeicherung:** Eingaben, Rohdaten und bereinigte Daten werden lokal als CSV-Dateien gespeichert.
+
+---
+
+## Projektstruktur
+
+PriceHunter/
+│
+├── main.py # Hauptapplikation (Flask + Scraper)
+├── data_transformer_cleansing.py # Datenbereinigung (CSV → CSV)
+├── requirements.txt # Projektabhängigkeiten
+├── README.md # Projektdokumentation
+│
+├── templates/ # HTML-Templates (Jinja2)
+│ ├── base.html
+│ ├── index.html
+│ ├── suchresultat_aktuell.html
+│ └── suchresultat_total.html
+│
+├── data.csv # Eingabe-Log (Produktsuche)
+├── output_scraper.csv # Rohdaten aus Web-Scraping
+└── output_clean.csv # Bereinigte Daten nach Data Cleansing
+
+---
+
+## Systemübersicht
+
+Die Applikation besteht aus drei Hauptkomponenten:
+
+| Komponente                     | Beschreibung                                                              |
+| ------------------------------ | ------------------------------------------------------------------------- |
+| **Frontend (Flask Templates)** | Benutzeroberfläche (Formular & Resultate) – basiert auf Bootstrap 5       |
+| **Backend (Python Flask-App)** | Logik für Routing, Scraping (Selenium + BeautifulSoup), Datenverarbeitung |
+| **Datenspeicherung**           | CSV-Dateien für Eingabe-Log, Rohdaten und bereinigte Daten                |
+
+Das **Block-Diagramm** befindet sich im Jupyter Notebook --> **`PriceHunter_Block_Diagramm.ipynb`**
+
+---
 
 ## Get started
 
-Explain what the user has to type to get started with your solution. Which one
-is the main Python file? In the simplest case, this could look something like
-this:
+### 1. Voraussetzungen
 
-`    python main.py`
+- Python 3.9 oder höher
+- Google Chrome (aktuell) **oder** Safari mit aktivierter Option „Entferne Automation“
+- Internetverbindung (für eBay-Scraping)
 
-In other cases the user might first have to install some project dependencies
-first has to run something like this (a sample requirements.txt file is also
-included in the project template):
+### 2. Installation der Abhängigkeiten
 
-`    pip install -r requirements.txt`
+```bash
+pip install -r requirements.txt
 
-## Understanding the sources
+### 3. Start der Anwendung
 
-Explain any high level concepts that you are using in your software. What were
-your ideas for creating the whole software? What might not be apparent from the
-sources alone? You can also add diagrams, photos of whiteboards or flipcharts
-or even crudly drawing napkin sketches of the core concepts of your software
-when they are readable and helpful for understanding.
+python main.py
 
-## Test Feature Branch
+Die Web-App läuft lokal unter: http://127.0.0.1:5000/
+```
