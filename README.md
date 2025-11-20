@@ -21,20 +21,20 @@ Ziel des Projekts war es, die Grundlagen von **Softwareentwicklung, Teamarbeit m
 
 PriceHunter/
 │
-├── main.py # Hauptapplikation (Flask + Scraper)
-├── data_transformer_cleansing.py # Datenbereinigung (CSV → CSV)
-├── requirements.txt # Projektabhängigkeiten
-├── README.md # Projektdokumentation
+├── main.py                         # Hauptapplikation (Flask + Scraper)
+├── data_transformer_cleansing.py   # Datenbereinigung (CSV → CSV)
+├── requirements.txt                # Projektabhängigkeiten
+├── README.md                       # Projektdokumentation
 │
-├── templates/ # HTML-Templates (Jinja2)
+├── templates/                      # HTML-Templates (Jinja2)
 │ ├── base.html
 │ ├── index.html
 │ ├── suchresultat_aktuell.html
 │ └── suchresultat_total.html
 │
-├── data.csv # Eingabe-Log (Produktsuche)
-├── output_scraper.csv # Rohdaten aus Web-Scraping
-└── output_clean.csv # Bereinigte Daten nach Data Cleansing
+├── data.csv                        # Eingabe-Log (Produktsuche)
+├── output_scraper.csv              # Rohdaten aus Web-Scraping
+└── output_clean.csv                # Bereinigte Daten nach Data Cleansing
 
 ---
 
