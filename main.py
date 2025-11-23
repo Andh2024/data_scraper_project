@@ -115,7 +115,7 @@ def load_rows_for_table():
 
 # ----------------------------- Scraper-Konfiguration ----------------------------- #
 BASE_URL = "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313&_udhi={}"  # mit Platzhaltern: {query} und {preis_max}
-MAX_PAGES = 1  # Seitenlimit - muss noch angepasst werden
+MAX_PAGES = 2  # Seitenlimit - muss noch angepasst werden
 HEADLESS = False  # für Chrome relevant: False = Scraping wird sichtbar im Browser ausgeführt ; True = Scraping läuft unsichtbar im Hintergrund
 
 # ----------------------------- Scraper-Selektoren ----------------------------- #
@@ -189,18 +189,18 @@ def setup_driver(headless: bool = HEADLESS) -> WebDriver:
     """
     if os.name == "nt":
         logger.info("OS: Windows -> Chrome WebDriver")
-        return _start_chrome(headless)
+        return start_chrome(headless)
     elif os.name == "posix":
         logger.info("OS: POSIX -> versuche Safari, sonst Chrome")
         try:
-            return _start_safari()
+            return start_safari()
         except Exception:
-            return _start_chrome(headless)
+            return start_chrome(headless)
     else:
         raise RuntimeError(f"Unbekanntes Betriebssystem: {os.name}")
 
 
-def _start_chrome(headless: bool) -> WebDriver:
+def start_chrome(headless: bool) -> WebDriver:
     """
     Startet Google Chrome WebDriver
     """
@@ -226,7 +226,7 @@ def _start_chrome(headless: bool) -> WebDriver:
     return driver
 
 
-def _start_safari() -> WebDriver:
+def start_safari() -> WebDriver:
     """
     Startet Safari WebDriver (nur auf macOS verfügbar)
     """
@@ -319,7 +319,7 @@ def lazy_scroll(driver: WebDriver, steps: int = 6, pause: float = 0.8) -> None:
         last_h = h
 
 
-def _sel_text(root: BeautifulSoup, selector: str) -> str:
+def sel_text(root: BeautifulSoup, selector: str) -> str:
     """
     Holt Text eines ersten Matching-Elements für den CSS-Selektor.
     """
@@ -327,7 +327,7 @@ def _sel_text(root: BeautifulSoup, selector: str) -> str:
     return el.get_text(" ", strip=True) if el else ""
 
 
-def _sel_href(root: BeautifulSoup, selector: str) -> Optional[str]:
+def sel_href(root: BeautifulSoup, selector: str) -> Optional[str]:
     """
     Holt href-Attribut des ersten Matching-Elements für den Selektor.
     """
@@ -337,7 +337,7 @@ def _sel_href(root: BeautifulSoup, selector: str) -> Optional[str]:
     return None
 
 
-def _clean_title(title: str) -> str:
+def clean_title(title: str) -> str:
     """
     Entfernt eBay-typische "Neue Fenster/Tab"-Zusätze aus Titeln.
     """
@@ -353,7 +353,7 @@ def _clean_title(title: str) -> str:
     return t
 
 
-def _extract_location_and_shipping(card: BeautifulSoup) -> Tuple[str, str]:
+def extract_location_and_shipping(card: BeautifulSoup) -> Tuple[str, str]:
     """
     Extrahiert das Herkunftsland und Versandzeile aus Attributreihen.
 
@@ -385,7 +385,7 @@ def _extract_location_and_shipping(card: BeautifulSoup) -> Tuple[str, str]:
     return land, versand
 
 
-def _parse_srcset_first(srcset: str) -> str:
+def parse_srcset_first(srcset: str) -> str:
     """
     Nimmt die erste URL aus einem srcset-Attribut.
     """
@@ -398,7 +398,7 @@ def _parse_srcset_first(srcset: str) -> str:
     return first.split()[0]
 
 
-def _parse_src_value(val: str) -> str:
+def parse_src_value(val: str) -> str:
     """
     Normalisiert mögliche data-*, srcset- oder src-Werte zu einer Bild-URL.
     """
@@ -406,11 +406,11 @@ def _parse_src_value(val: str) -> str:
         return ""
     val = val.strip()
     if "," in val and " " in val:
-        return _parse_srcset_first(val)
+        return parse_srcset_first(val)
     return val
 
 
-def _extract_image_url(img_el) -> str:
+def extract_image_url(img_el) -> str:
     """
     Extrahiert eine bestmögliche Bild-URL aus einem <img>-Element.
 
@@ -428,10 +428,10 @@ def _extract_image_url(img_el) -> str:
     for attr in ("data-src", "data-img", "data-srcset", "data-lazy"):
         val = img_el.get(attr)
         if val:
-            return _parse_src_value(val)
+            return parse_src_value(val)
     srcset = img_el.get("srcset")
     if srcset:
-        return _parse_srcset_first(srcset)
+        return parse_srcset_first(srcset)
     return ""
 
 
@@ -453,22 +453,22 @@ def parse_items_from_html(html: str, seen_links: set) -> List[Dict]:
 
     logger.info("Karten gefunden (ITEMS_SELECTOR): %d", len(cards))
     for card in cards:
-        title = _clean_title(_sel_text(card, TITLE_SELECTOR)).strip()
+        title = clean_title(sel_text(card, TITLE_SELECTOR)).strip()
         if not title:
             continue
         if any(bad in title.lower() for bad in BAD_TITLE_SUBSTRINGS):
             continue
 
-        link = _sel_href(card, LINK_SELECTOR)
+        link = sel_href(card, LINK_SELECTOR)
         if not link or "/itm/" not in link or link in seen_links:
             continue
         seen_links.add(link)
 
-        price = _sel_text(card, PRICE_SELECTOR)
-        condition = _sel_text(card, CONDITION_SELECTOR)
-        land, versand = _extract_location_and_shipping(card)
+        price = sel_text(card, PRICE_SELECTOR)
+        condition = sel_text(card, CONDITION_SELECTOR)
+        land, versand = extract_location_and_shipping(card)
         image_el = card.select_one(IMAGE_SELECTOR)
-        image = _extract_image_url(image_el)
+        image = extract_image_url(image_el)
 
         rows.append(
             {
