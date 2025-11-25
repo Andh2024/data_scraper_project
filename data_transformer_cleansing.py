@@ -174,7 +174,11 @@ def parse_number_eu(text: str | float | int | None) -> float | None:
     elif "," in s:
         # Prüfe, ob das letzte Segment Dezimalstellen sein könnten
         parts = s.split(",")
-        if len(parts[-1]) in (2, 3):
+        # if len(parts[-1]) in (2, 3):
+        #    s = "".join(parts[:-1]).replace(".", "") + "." + parts[-1]
+        # Hinweis (Uni-Test): Ursprüngliche Bedingung: hat nur Dezimalteile mit 2–3 Stellen erkannt.
+        # Hinweis (Uni-Test): Wurde ersetzt, weil z. B. '12,5' fälschlich als '125.0' interpretiert wurde.
+        if len(parts[-1]) <= 3:  # statt (2,3)
             s = "".join(parts[:-1]).replace(".", "") + "." + parts[-1]
         else:
             # eher Tausendertrennzeichen
@@ -203,6 +207,7 @@ def fix_grossbritannien(value: str | None) -> str | None:
         "GroÃŸbritannien",
         "GroÃbritannien",
         "GroÃ£Âbritannien",
+        "GroÃYbritannien",  # Hinweis (Uni-Test): neue Variante
         "Großbritannien",
     }
     if s in bad:
