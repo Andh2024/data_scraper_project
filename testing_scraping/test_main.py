@@ -36,3 +36,37 @@ def test_extract_image_url_returns_valid_url():
     img = soup.find("img")
     result = extract_image_url(img)
     assert result == "https://example.com/test.jpg"
+
+
+NEXT_SELECTOR = "a.next"  # Beispiel-Selektor für den "Next"-Link
+
+
+def get_next_url(html: str) -> str | None:
+    """Extrahiert den Link zur nächsten Seite. (Mini-Version aus dem Scraper)"""
+    soup = BeautifulSoup(html, "html.parser")
+    link = soup.select_one(NEXT_SELECTOR)
+    return link["href"] if link and link.get("href") else None
+
+
+def test_pagination_two_pages():
+    """Testet, ob zwei Seiten korrekt 'durchgeblättert' werden."""
+
+    html_page_1 = """
+        <html>
+            <a class="next" href="http://example.com/page2">Weiter</a>
+        </html>
+    """
+
+    html_page_2 = """
+        <html>
+            <!-- keine weitere Seite -->
+        </html>
+    """
+
+    # Seite 1 → Seite 2
+    next_url = get_next_url(html_page_1)
+    assert next_url == "http://example.com/page2"
+
+    # Seite 2 → None (kein next-Link)
+    next_url_2 = get_next_url(html_page_2)
+    assert next_url_2 is None
