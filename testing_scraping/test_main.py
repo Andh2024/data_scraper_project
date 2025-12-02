@@ -26,7 +26,7 @@ def test_extract_location_and_shipping_returns_correct_values():
     soup = BeautifulSoup(html, "html.parser")
     land, versand = extract_location_and_shipping(soup)
     assert "Schweiz" in land
-    assert "10" in versand
+    assert "10" in versand, f"Versandkosten nicht korrekt extrahiert: '{versand}'"
 
 
 def test_extract_image_url_returns_valid_url():
