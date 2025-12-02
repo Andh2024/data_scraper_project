@@ -70,3 +70,23 @@ def test_pagination_two_pages():
     # Seite 2 → None (kein next-Link)
     next_url_2 = get_next_url(html_page_2)
     assert next_url_2 is None
+
+
+def test_accept_cookies():
+    """Testet, ob die Funktion accept_cookies ohne Fehler ausgeführt wird."""
+    from main import accept_cookies
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+
+    # Headless-Browser für den Test
+    options = Options()
+    options.add_argument("--headless")
+    driver = webdriver.Chrome(options=options)
+
+    try:
+        driver.get(
+            "https://www.ebay.ch/sch/i.html?_nkw=k%C3%A4nguru&_sacat=0&_from=R40&_trksid=p4432023.m570.l1313"
+        )  # Beispiel-URL
+        accept_cookies(driver)
+    finally:
+        driver.quit()
