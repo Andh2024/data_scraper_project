@@ -13,7 +13,7 @@ import csv
 import os
 import time
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 import logging
 
 # ----------------------------- Drittanbieter ----------------------------- #
@@ -206,6 +206,7 @@ def start_chrome(headless: bool) -> WebDriver:
     """
     from selenium.webdriver.chrome.service import Service as ChromeService
     from selenium.webdriver.chrome.options import Options as ChromeOptions
+
     from webdriver_manager.chrome import ChromeDriverManager
 
     options = ChromeOptions()
