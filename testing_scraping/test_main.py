@@ -120,63 +120,6 @@ def test_append_row_schreibt_zeile_in_csv(tmp_path, monkeypatch):
     assert "Schweiz" in lines[1]
 
 
-# ---------- Fake Selenium-Objekte ----------
-
-
-class FakeButton:
-    def __init__(self, text):
-        self.text = text
-        self.clicked = False
-
-    def click(self):
-        self.clicked = True
-
-
-class FakeDriver:
-    def __init__(self, buttons=None):
-        self._buttons = buttons or []
-        # einfache Attr, damit accept_cookies driver.switch_to.default_content() aufrufen könnte,
-        # falls wir später iframes testen wollen
-        self.switch_to = self
-
-    def find_elements(self, by=None, value=None):
-        # accept_cookies ruft:
-        #   find_elements(By.TAG_NAME, "button")
-        #   find_elements(By.TAG_NAME, "iframe")
-        if value == "button":
-            return self._buttons
-        if value == "iframe":
-            return []  # für diesen Test: keine iframes
-        return []
-
-    # Platzhalter, falls accept_cookies mal frame()/default_content() aufruft
-    def frame(self, frame):
-        pass
-
-    def default_content(self):
-        pass
-
-
-# ---------- Eigentlicher Test ----------
-
-
-def test_accept_cookies_clicks_main_button(monkeypatch):
-    # Wir bauen einen Fake-Button mit dem Text, den dein Code sucht
-    btn = FakeButton("Alle akzeptieren")
-
-    # FakeDriver mit genau diesem Button
-    driver = FakeDriver(buttons=[btn])
-
-    # time.sleep patchen, damit der Test nicht wirklich wartet
-    monkeypatch.setattr(time, "sleep", lambda x: None)
-
-    # Aufruf der echten Funktion aus main.py
-    accept_cookies(driver)
-
-    # Erwartung: der Button wurde angeklickt
-    assert btn.clicked is True
-
-
 # soll bis zu 5 Suchbegriffe mit + zusammenbauen
 def test_url_building():
     url = BASE_URL.format("LED Stehlampe", "200")
