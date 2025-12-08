@@ -40,6 +40,7 @@ def test_extract_image_url_returns_valid_url():
 
 
 def test_parse_items_from_html_verhindert_duplikate_mit_seen_links():
+    """Prüft, ob Objekte mit gleichem Item-Link zur einmals geladen wird"""
     html = """
     <ul class="srp-results">
       <li class="s-item">
