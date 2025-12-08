@@ -115,7 +115,7 @@ def load_rows_for_table():
 
 # ----------------------------- Scraper-Konfiguration ----------------------------- #
 BASE_URL = "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313&_udhi={}"  # mit Platzhaltern: {query} und {preis_max}
-MAX_PAGES = 2  # Seitenlimit - muss noch angepasst werden
+MAX_PAGES = 4  # Seitenlimit - muss noch angepasst werden
 HEADLESS = False  # für Chrome relevant: False = Scraping wird sichtbar im Browser ausgeführt ; True = Scraping läuft unsichtbar im Hintergrund
 
 # ----------------------------- Scraper-Selektoren ----------------------------- #

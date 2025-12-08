@@ -39,16 +39,6 @@ def test_extract_image_url_returns_valid_url():
     assert result == "https://example.com/test.jpg"
 
 
-NEXT_SELECTOR = "a.next"  # Beispiel-Selektor für den "Next"-Link
-
-
-def get_next_url(html: str) -> str | None:
-    """Extrahiert den Link zur nächsten Seite. (Mini-Version aus dem Scraper)"""
-    soup = BeautifulSoup(html, "html.parser")
-    link = soup.select_one(NEXT_SELECTOR)
-    return link["href"] if link and link.get("href") else None
-
-
 def test_parse_items_from_html_verhindert_duplikate_mit_seen_links():
     html = """
     <ul class="srp-results">
@@ -187,36 +177,13 @@ def test_accept_cookies_clicks_main_button(monkeypatch):
     assert btn.clicked is True
 
 
+# soll bis zu 5 Suchbegriffe mit + zusammenbauen
 def test_url_building():
     url = BASE_URL.format("LED Stehlampe", "200")
     assert (
         url
-        == "https://www.ebay.ch/sch/i.html?_nkw=LED&Stehlampe&_sacat=0&_from=R40&_trksid=m570.l1313&_udhi=200"
+        == "https://www.ebay.ch/sch/i.html?_nkw=LED+Stehlampe&_sacat=0&_from=R40&_trksid=m570.l1313&_udhi=200"
     )
-
-
-def test_pagination_two_pages():
-    """Testet, ob zwei Seiten korrekt 'durchgeblättert' werden."""
-
-    html_page_1 = """
-        <html>
-            <a class="next" href="http://example.com/page2">Weiter</a>
-        </html>
-    """
-
-    html_page_2 = """
-        <html>
-            <!-- keine weitere Seite -->
-        </html>
-    """
-
-    # Seite 1 → Seite 2
-    next_url = get_next_url(html_page_1)
-    assert next_url == "http://example.com/page2"
-
-    # Seite 2 → None (kein next-Link)
-    next_url_2 = get_next_url(html_page_2)
-    assert next_url_2 is None
 
 
 def test_accept_cookies():
@@ -237,3 +204,38 @@ def test_accept_cookies():
         accept_cookies(driver)
     finally:
         driver.quit()
+
+
+def test_pagination_two_pages():
+    html_page_1 = """
+        <html>
+            <a class="pagination__next" href="http://example.com/page2">Weiter</a>
+        </html>
+    """
+
+    html_page_2 = """
+        <html>
+            <a class="pagination__next" href="http://example.com/page3">Weiter</a>
+        </html>
+    """
+
+    html_page_3 = """
+        <html>
+            <!-- keine weitere Seite -->
+        </html>
+    """
+
+    # Seite 1 → Seite 2
+    soup1 = BeautifulSoup(html_page_1, "html.parser")
+    next1 = soup1.select_one(NEXT_SELECTOR)
+    assert next1["href"] == "http://example.com/page2"
+
+    # Seite 2 → Seite 3
+    soup2 = BeautifulSoup(html_page_2, "html.parser")
+    next2 = soup2.select_one(NEXT_SELECTOR)
+    assert next2["href"] == "http://example.com/page3"
+
+    # Seite 3 → keine weitere Seite
+    soup3 = BeautifulSoup(html_page_3, "html.parser")
+    next3 = soup3.select_one(NEXT_SELECTOR)
+    assert next3 is None
