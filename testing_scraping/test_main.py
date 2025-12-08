@@ -121,12 +121,33 @@ def test_append_row_schreibt_zeile_in_csv(tmp_path, monkeypatch):
     assert "Schweiz" in lines[1]
 
 
-# soll bis zu 5 Suchbegriffe mit + zusammenbauen
 def test_url_building():
-    url = BASE_URL.format("LED Stehlampe", "200")
+    query = "LED Stehlampe"
+    preis = "200"
+
+    # Das erwartete Encoding des Suchbegriffs
+    encoded_query = quote_plus(query)  # → "LED+Stehlampe"
+
+    url = BASE_URL.format(encoded_query, preis)
+
     assert (
         url
         == "https://www.ebay.ch/sch/i.html?_nkw=LED+Stehlampe&_sacat=0&_from=R40&_trksid=m570.l1313&_udhi=200"
+    )
+
+
+def test_url_building_limit_to_five_words():
+    query = "LED Stehlampe Wohnzimmer dimmbar grün hell"  # 6 Wörter
+    preis = "200"
+
+    limited = " ".join(query.split()[:5])  # nur die ersten 5 Wörter
+    encoded = quote_plus(limited)  # Leerzeichen -> +
+
+    url = BASE_URL.format(encoded, preis)
+
+    assert (
+        url
+        == "https://www.ebay.ch/sch/i.html?_nkw=LED+Stehlampe+Wohnzimmer+dimmbar+gr%C3%BCn&_sacat=0&_from=R40&_trksid=m570.l1313&_udhi=200"
     )
 
 

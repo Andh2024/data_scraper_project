@@ -27,6 +27,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.remote.webdriver import WebDriver
 from bs4 import BeautifulSoup
+from urllib.parse import quote_plus
 
 # ----------------------------- Lokale Module ----------------------------- #
 from data_transformer_cleansing import cleanup
@@ -588,6 +589,15 @@ def save_to_csv(items: List[Dict], filename: Path) -> None:
     logger.info("CSV gespeichert: %s  (%d Zeilen)", filename, len(items))
 
 
+def encode_query_limit_5(query: str) -> str:
+    """
+    Nimmt nur die ersten 5 Wörter des Suchbegriffs und encoded sie für die URL
+    """
+    words = query.split()[:5]  # nur die ersten 5 Wörter
+    limited = " ".join(words)  # wieder zu einem String zusammenbauen
+    return quote_plus(limited)  # Leerzeichen -> '+'
+
+
 def run_scrape(query: str, preis: str) -> List[Dict]:
     """
     Öffentliche Funktion: Scrapt eBay für einen Suchbegriff und schreibt CSV.
@@ -600,8 +610,11 @@ def run_scrape(query: str, preis: str) -> List[Dict]:
     Returns:
         Angebotsliste (Rohdaten).
     """
+
+    query_encoded = encode_query_limit_5(query)
     preis_clean = "".join(ch for ch in str(preis) if ch.isdigit()) or ""
-    start_url = BASE_URL.format(query, preis_clean)  # Such-URL inkl. Maxpreis
+    query_encoded = quote_plus(query)
+    start_url = BASE_URL.format(query_encoded, preis_clean)  # Such-URL inkl. Maxpreis
     driver = setup_driver()  # WebDriver wählen/starten
     try:
         rows = scrape_all(driver, start_url, max_pages=MAX_PAGES)  # Scrape
