@@ -48,3 +48,26 @@ def test_fix_grossbritannien_replaces_faulty_encoding():
     assert fix_grossbritannien("Großbritannien") == "Grossbritannien"
     # Kontrolle: andere Länder bleiben unverändert
     assert fix_grossbritannien("Deutschland") == "Deutschland"
+
+
+# --------------------------- Test 4 – Spaltenname-Erkennung (Case + Whitespace) --------------------------- #
+
+
+def test_find_col_handles_case_and_whitespace():
+    """
+    Testet, ob find_col Spaltennamen trotz Groß/Kleinschreibung und überflüssigen Leerzeichen korrekt erkennt.
+    """
+    import pandas as pd
+    from data_transformer_cleansing import find_col
+
+    # DataFrame mit absichtlich 'schmutzigen' Spaltennamen
+    df = pd.DataFrame(columns=["  Preis  ", "  VERSANDkosten ", " Titel "])
+
+    # Erwartung: 'Preis' wird trotz Whitespace und Case gefunden
+    assert find_col(df, ["preis"]) == "  Preis  "
+
+    # Erwartung: 'Versandkosten' wird ebenfalls korrekt gefunden
+    assert find_col(df, ["versandkosten"]) == "  VERSANDkosten "
+
+    # Erwartung: nicht vorhandene Spalten liefern None
+    assert find_col(df, ["foobar"]) is None
