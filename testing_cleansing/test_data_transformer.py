@@ -1,7 +1,7 @@
-# ---------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
 # Unit-Tests für Funktionen aus data_transformer_cleansing.py
-# Testet Datenbereinigung: Zahlenformat, Währungserkennung, Encoding-Korrektur
-# ---------------------------------------------------------------------
+# Testet Datenbereinigung: Zahlenformat, Währungserkennung, Encoding-Korrektur, Spaltennamenerkennung
+# ---------------------------------------------------------------------------------------------------
 
 from data_transformer_cleansing import (
     parse_number_eu,
