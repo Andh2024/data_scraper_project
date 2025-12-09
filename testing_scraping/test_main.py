@@ -123,12 +123,12 @@ def test_append_row_schreibt_zeile_in_csv(tmp_path, monkeypatch):
 
 def test_url_building():
     query = "LED Stehlampe"
-    preis = "200"
+    preis_clean = "200"
 
     # Das erwartete Encoding des Suchbegriffs
-    encoded_query = quote_plus(query)  # → "LED+Stehlampe"
+    query_encoded = encode_query_limit_5(query)  # → "LED+Stehlampe"
 
-    url = BASE_URL.format(encoded_query, preis)
+    url = BASE_URL.format(query_encoded, preis_clean)
 
     assert (
         url
@@ -138,12 +138,11 @@ def test_url_building():
 
 def test_url_building_limit_to_five_words():
     query = "LED Stehlampe Wohnzimmer dimmbar grün hell"  # 6 Wörter
-    preis = "200"
+    preis_clean = "200"
 
-    limited = " ".join(query.split()[:5])  # nur die ersten 5 Wörter
-    encoded = quote_plus(limited)  # Leerzeichen -> +
+    query_encoded = encode_query_limit_5(query)
 
-    url = BASE_URL.format(encoded, preis)
+    url = BASE_URL.format(query_encoded, preis_clean)
 
     assert (
         url

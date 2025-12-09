@@ -613,7 +613,6 @@ def run_scrape(query: str, preis: str) -> List[Dict]:
 
     query_encoded = encode_query_limit_5(query)
     preis_clean = "".join(ch for ch in str(preis) if ch.isdigit()) or ""
-    query_encoded = quote_plus(query)
     start_url = BASE_URL.format(query_encoded, preis_clean)  # Such-URL inkl. Maxpreis
     driver = setup_driver()  # WebDriver wählen/starten
     try:
