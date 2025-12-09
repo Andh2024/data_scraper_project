@@ -152,6 +152,7 @@ SHIPPING_SELECTOR = (
     ".su-styled-text.secondary.large",
     "span[class*='shipping']",
 )
+
 CONDITION_SELECTOR = (
     ".s-card__subtitle-row .su-styled-text.secondary.default, "
     ".s-card__subtitle .su-styled-text.secondary.default, "
@@ -369,6 +370,7 @@ def extract_location_and_shipping(card: BeautifulSoup) -> Tuple[str, str]:
     Args:
         card: BeautifulSoup-Knoten eines Angebots.
     """
+
     texts = [
         el.get_text(" ", strip=True)
         for el in card.select(ATTR_ROW_TEXTS_SELECTOR)
