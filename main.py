@@ -145,6 +145,13 @@ ATTR_ROW_TEXTS_SELECTOR = (
     ".s-item__location, "
     ".s-item__itemLocation"
 )
+
+SHIPPING_SELECTOR = (
+    ".s-item__shipping",
+    ".s-item__logisticsCost",
+    ".su-styled-text.secondary.large",
+    "span[class*='shipping']",
+)
 CONDITION_SELECTOR = (
     ".s-card__subtitle-row .su-styled-text.secondary.default, "
     ".s-card__subtitle .su-styled-text.secondary.default, "
@@ -355,38 +362,6 @@ def clean_title(title: str) -> str:
     return t
 
 
-# def extract_location_and_shipping(card: BeautifulSoup) -> Tuple[str, str]:
-#    """
-#    Extrahiert das Herkunftsland und Versandzeile aus Attributreihen.
-
-#    Args:
-#        card: BeautifulSoup-Knoten eines Angebots.
-#    """
-#    texts = [
-#        el.get_text(" ", strip=True)
-#        for el in card.select(ATTR_ROW_TEXTS_SELECTOR)
-#        if el.get_text(strip=True)
-#    ]
-#    land, versand = "", ""
-#    for t in texts:
-#        tl = t.lower()
-#        if ("versand" in tl) or t.strip().startswith("+"):
-#            if not versand:
-#                versand = t
-#            continue
-#        if ("aus " in tl) or ("from " in tl):
-#            if not land:
-#                land = t
-#            continue
-#    if not land and texts:
-#        candidates = [t for t in texts if "versand" not in t.lower()]
-#        if candidates:
-#            land = candidates[-1]
-#    if not land or "aus" not in land.lower():
-#        land = "aus Schweiz"
-#    return land, versand
-
-
 def extract_location_and_shipping(soup):
     """Extrahiert Standort und Versandkosten aus einem Item-Block."""
 
@@ -396,16 +371,8 @@ def extract_location_and_shipping(soup):
     )
     land = location_tag.get_text(strip=True) if location_tag else ""
 
-    # Versandkosten – eBay nutzt mehrere mögliche Klassen
-    shipping_selectors = [
-        ".s-item__shipping",  # ältere Version
-        ".s-item__logisticsCost",  # alternative Version
-        ".su-styled-text.secondary.large",  # aktuelle Version (siehe dein Screenshot)
-        "span[class*='shipping']",  # generischer Fallback
-    ]
-
     versand = ""
-    for sel in shipping_selectors:
+    for sel in SHIPPING_SELECTOR:
         tag = soup.select_one(sel)
         if tag:
             versand = tag.get_text(strip=True)

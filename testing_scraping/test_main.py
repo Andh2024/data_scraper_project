@@ -39,7 +39,7 @@ def test_extract_image_url_returns_valid_url():
     assert result == "https://example.com/test.jpg"
 
 
-def test_parse_items_from_html_verhindert_duplikate_mit_seen_links():
+def test_parse_items_from_html_check_duplicates_marked_as_seen_links():
     """Prüft, ob Objekte mit gleichem Item-Link zur einmals geladen wird"""
     html = """
     <ul class="srp-results">
@@ -70,7 +70,8 @@ def test_parse_items_from_html_verhindert_duplikate_mit_seen_links():
     assert "https://www.ebay.ch/itm/123" in seen
 
 
-def test_save_to_csv_schreibt_header_und_zeilen(tmp_path):
+def test_save_to_csv_writes_header_and_lines(tmp_path):
+    """Testet, ob Header und Daten korrekt im CSV zusammengebaut werden."""
     items = [
         {
             "titel": "A",
@@ -105,7 +106,8 @@ def test_save_to_csv_schreibt_header_und_zeilen(tmp_path):
     assert "B" in content
 
 
-def test_append_row_schreibt_zeile_in_csv(tmp_path, monkeypatch):
+def test_append_row_writes_line_in_csv(tmp_path, monkeypatch):
+    """Testet, ob die Formulareingabe je-weils als neue Zeile in der Datei «data.csv» gespeichert wird."""
     # CSV_PATH im Modul auf temporäre Datei umbiegen
     test_csv = tmp_path / "input_log.csv"
     monkeypatch.setattr(main, "CSV_PATH", test_csv)
@@ -122,6 +124,7 @@ def test_append_row_schreibt_zeile_in_csv(tmp_path, monkeypatch):
 
 
 def test_url_building():
+    """Testet, ob die URL korrekt zusammengebaut wird."""
     query = "LED Stehlampe"
     preis_clean = "200"
 
@@ -137,6 +140,7 @@ def test_url_building():
 
 
 def test_url_building_limit_to_five_words():
+    """Testet, ob maximal 5 Suchbegriffe in der URL verwendet werden."""
     query = "LED Stehlampe Wohnzimmer dimmbar grün hell"  # 6 Wörter
     preis_clean = "200"
 
@@ -171,6 +175,7 @@ def test_accept_cookies():
 
 
 def test_pagination_two_pages():
+    """Testet, ob das Blättern funktioniert."""
     html_page_1 = """
         <html>
             <a class="pagination__next" href="http://example.com/page2">Weiter</a>
