@@ -13,7 +13,7 @@ import csv
 import os
 import time
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 import logging
 
 # ----------------------------- Drittanbieter ----------------------------- #
@@ -27,6 +27,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.remote.webdriver import WebDriver
 from bs4 import BeautifulSoup
+from urllib.parse import quote_plus
 
 # ----------------------------- Lokale Module ----------------------------- #
 from data_transformer_cleansing import cleanup
@@ -115,7 +116,7 @@ def load_rows_for_table():
 
 # ----------------------------- Scraper-Konfiguration ----------------------------- #
 BASE_URL = "https://www.ebay.ch/sch/i.html?_nkw={}&_sacat=0&_from=R40&_trksid=m570.l1313&_udhi={}"  # mit Platzhaltern: {query} und {preis_max}
-MAX_PAGES = 2  # Seitenlimit - muss noch angepasst werden
+MAX_PAGES = 4  # Seitenlimit - muss noch angepasst werden
 HEADLESS = False  # für Chrome relevant: False = Scraping wird sichtbar im Browser ausgeführt ; True = Scraping läuft unsichtbar im Hintergrund
 
 # ----------------------------- Scraper-Selektoren ----------------------------- #
@@ -143,6 +144,13 @@ ATTR_ROW_TEXTS_SELECTOR = (
     ".s-card__attribute-row .su-styled-text.secondary.large, "
     ".s-item__location, "
     ".s-item__itemLocation"
+)
+
+SHIPPING_SELECTOR = (
+    ".s-item__shipping",
+    ".s-item__logisticsCost",
+    ".su-styled-text.secondary.large",
+    "span[class*='shipping']",
 )
 CONDITION_SELECTOR = (
     ".s-card__subtitle-row .su-styled-text.secondary.default, "
@@ -206,6 +214,7 @@ def start_chrome(headless: bool) -> WebDriver:
     """
     from selenium.webdriver.chrome.service import Service as ChromeService
     from selenium.webdriver.chrome.options import Options as ChromeOptions
+
     from webdriver_manager.chrome import ChromeDriverManager
 
     options = ChromeOptions()
@@ -353,35 +362,26 @@ def clean_title(title: str) -> str:
     return t
 
 
-def extract_location_and_shipping(card: BeautifulSoup) -> Tuple[str, str]:
-    """
-    Extrahiert das Herkunftsland und Versandzeile aus Attributreihen.
+def extract_location_and_shipping(soup):
+    """Extrahiert Standort und Versandkosten aus einem Item-Block."""
 
-    Args:
-        card: BeautifulSoup-Knoten eines Angebots.
-    """
-    texts = [
-        el.get_text(" ", strip=True)
-        for el in card.select(ATTR_ROW_TEXTS_SELECTOR)
-        if el.get_text(strip=True)
-    ]
-    land, versand = "", ""
-    for t in texts:
-        tl = t.lower()
-        if ("versand" in tl) or t.strip().startswith("+"):
-            if not versand:
-                versand = t
-            continue
-        if ("aus " in tl) or ("from " in tl):
-            if not land:
-                land = t
-            continue
-    if not land and texts:
-        candidates = [t for t in texts if "versand" not in t.lower()]
-        if candidates:
-            land = candidates[-1]
-    if not land or "aus" not in land.lower():
-        land = "aus Schweiz"
+    # Standort (dieser Selector ist stabil)
+    location_tag = soup.select_one(
+        ".s-item__location, .s-card__location, span[itemprop='availableAtOrFrom']"
+    )
+    land = location_tag.get_text(strip=True) if location_tag else ""
+
+    versand = ""
+    for sel in SHIPPING_SELECTOR:
+        tag = soup.select_one(sel)
+        if tag:
+            versand = tag.get_text(strip=True)
+            break
+
+    # Bereinigung optional
+    if versand:
+        versand = versand.replace("\xa0", " ").replace("  ", " ")
+
     return land, versand
 
 
@@ -556,6 +556,15 @@ def save_to_csv(items: List[Dict], filename: Path) -> None:
     logger.info("CSV gespeichert: %s  (%d Zeilen)", filename, len(items))
 
 
+def encode_query_limit_5(query: str) -> str:
+    """
+    Nimmt nur die ersten 5 Wörter des Suchbegriffs und encoded sie für die URL
+    """
+    words = query.split()[:5]  # nur die ersten 5 Wörter
+    limited = " ".join(words)  # wieder zu einem String zusammenbauen
+    return quote_plus(limited)  # Leerzeichen -> '+'
+
+
 def run_scrape(query: str, preis: str) -> List[Dict]:
     """
     Öffentliche Funktion: Scrapt eBay für einen Suchbegriff und schreibt CSV.
@@ -568,8 +577,10 @@ def run_scrape(query: str, preis: str) -> List[Dict]:
     Returns:
         Angebotsliste (Rohdaten).
     """
+
+    query_encoded = encode_query_limit_5(query)
     preis_clean = "".join(ch for ch in str(preis) if ch.isdigit()) or ""
-    start_url = BASE_URL.format(query, preis_clean)  # Such-URL inkl. Maxpreis
+    start_url = BASE_URL.format(query_encoded, preis_clean)  # Such-URL inkl. Maxpreis
     driver = setup_driver()  # WebDriver wählen/starten
     try:
         rows = scrape_all(driver, start_url, max_pages=MAX_PAGES)  # Scrape
