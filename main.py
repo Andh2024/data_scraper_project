@@ -13,7 +13,7 @@ import csv
 import os
 import time
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 import logging
 
 # ----------------------------- Drittanbieter ----------------------------- #
@@ -362,26 +362,35 @@ def clean_title(title: str) -> str:
     return t
 
 
-def extract_location_and_shipping(soup):
-    """Extrahiert Standort und Versandkosten aus einem Item-Block."""
+def extract_location_and_shipping(card: BeautifulSoup) -> Tuple[str, str]:
+    """
+    Extrahiert das Herkunftsland und Versandzeile aus Attributreihen.
 
-    # Standort (dieser Selector ist stabil)
-    location_tag = soup.select_one(
-        ".s-item__location, .s-card__location, span[itemprop='availableAtOrFrom']"
-    )
-    land = location_tag.get_text(strip=True) if location_tag else ""
-
-    versand = ""
-    for sel in SHIPPING_SELECTOR:
-        tag = soup.select_one(sel)
-        if tag:
-            versand = tag.get_text(strip=True)
-            break
-
-    # Bereinigung optional
-    if versand:
-        versand = versand.replace("\xa0", " ").replace("  ", " ")
-
+    Args:
+        card: BeautifulSoup-Knoten eines Angebots.
+    """
+    texts = [
+        el.get_text(" ", strip=True)
+        for el in card.select(ATTR_ROW_TEXTS_SELECTOR)
+        if el.get_text(strip=True)
+    ]
+    land, versand = "", ""
+    for t in texts:
+        tl = t.lower()
+        if ("versand" in tl) or t.strip().startswith("+"):
+            if not versand:
+                versand = t
+            continue
+        if ("aus " in tl) or ("from " in tl):
+            if not land:
+                land = t
+            continue
+    if not land and texts:
+        candidates = [t for t in texts if "versand" not in t.lower()]
+        if candidates:
+            land = candidates[-1]
+    if not land or "aus" not in land.lower():
+        land = "aus Schweiz"
     return land, versand
 
 
