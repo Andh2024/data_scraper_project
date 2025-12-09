@@ -16,18 +16,24 @@ def test_clean_title_removes_bad_phrases():
     assert result.startswith("MacBook Pro")
 
 
-def test_extract_location_and_shipping_returns_correct_values():
-    """Testet, ob Land und Versandkosten korrekt erkannt werden."""
+def test_extract_location_and_shipping():
     html = """
     <div>
-        <span class="s-item__location">aus Schweiz</span>
-        <span class="s-item__shipping">+ CHF 10 Versand</span>
+        <div class="s-card__attribute-row">
+            <span class="su-styled-text secondary large">+CHF 3.47 Versand</span>
+        </div>
+        <div class="s-card__attribute-row">
+            <span class="su-styled-text secondary large">aus Deutschland</span>
+        </div>
     </div>
     """
+
     soup = BeautifulSoup(html, "html.parser")
+
     land, versand = extract_location_and_shipping(soup)
-    assert "Schweiz" in land
-    assert "10" in versand, f"Versandkosten nicht korrekt extrahiert: '{versand}'"
+
+    assert land == "aus Deutschland"
+    assert "+CHF 3.47 Versand" in versand
 
 
 def test_extract_image_url_returns_valid_url():
