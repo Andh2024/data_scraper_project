@@ -145,14 +145,6 @@ ATTR_ROW_TEXTS_SELECTOR = (
     ".s-item__location, "
     ".s-item__itemLocation"
 )
-
-SHIPPING_SELECTOR = (
-    ".s-item__shipping",
-    ".s-item__logisticsCost",
-    ".su-styled-text.secondary.large",
-    "span[class*='shipping']",
-)
-
 CONDITION_SELECTOR = (
     ".s-card__subtitle-row .su-styled-text.secondary.default, "
     ".s-card__subtitle .su-styled-text.secondary.default, "
